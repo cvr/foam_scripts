@@ -7,7 +7,7 @@ import csv
 #directory to process
 path="./postProcessing/sets"
 #This is the filename in each time directories.
-filename='lineforwaveLevel1_alpha1.csv'
+filename='origin_alpha1.csv'
 
 def mysort(tobesorted):
   'This function sort a list of floating numbers in ascending order.'

@@ -8,7 +8,7 @@ import csv
 import re
 #directory to process
 path="./postProcessing/sets"
-filename='velocity_sample1_U.csv'
+filename='origin_U.csv'
 
 def mysort(tobesorted):
   """This function sort a list of float in ascending order."""
