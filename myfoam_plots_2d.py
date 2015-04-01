@@ -51,9 +51,9 @@ def plot_alpha1(path,output_name):
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 path = './postProcessing/history/origin_U.csv.point_3.csv'
 output_name = 'Ux_at_z=0.15'
-#plotU(path, output_name)
+plotU(path, output_name)
 
 
-path_alpha1 = './postProcessing/history_origin_alpha1.csv'
-output_name_alpha1 = 'alpha1'
+path_alpha1 = './postProcessing/history_origin_alpha.water.csv'
+output_name_alpha1 = 'alpha.water'
 plot_alpha1(path_alpha1,output_name_alpha1)
