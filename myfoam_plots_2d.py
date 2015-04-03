@@ -39,6 +39,7 @@ def plot_alpha1(path,output_name):
     #plot wave height history
     plt.figure()
     plt.plot(history[:,0],history[:,1],'r-',label='wave height')
+    plt.ylim((0,0.6))
     legend = plt.legend(loc='upper center', shadow=True, fontsize='x-large')
     #plt.xlim(3.0,4.0)
     plt.xlabel('time (s)')
@@ -49,8 +50,8 @@ def plot_alpha1(path,output_name):
     plt.savefig('./myplot/'+output_name+'.png', bbox_inches='tight')
     plt.close()
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-path = './postProcessing/history/origin_U.csv.point_3.csv'
-output_name = 'Ux_at_z=0.15'
+path = './postProcessing/history/origin_U.csv.point_6.csv'
+output_name = 'Ux_at_z=0.19'
 plotU(path, output_name)
 
 
