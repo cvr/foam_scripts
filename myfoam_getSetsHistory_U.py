@@ -1,4 +1,4 @@
-#!/usr/bin/python3.4
+#!/usr/bin/python
 #author:shawn
 #date:Oct 12, 2014
 #This script should be excuted in current case directory. It can abstract the velocity sampled by cloud points to corresponding history. The results are located in './postProcessing/history'.
@@ -6,6 +6,7 @@
 import os
 import csv
 import re
+import codecs
 #directory to process
 path="./postProcessing/sets"
 filename='origin_U.csv'
@@ -43,18 +44,23 @@ def getpathlist():
 def deletefstline(pathlist):
   #The first line of U data files contains unreadable characters, so it need to be deleted. And new file is written in the same directory with a suffix of .new.csv
   #Taking a list of full path as input, this function not only generate new files, but also return new list of path pointing to new files. 
-  print ("\n\n////////////////////Called deletefstline().///////////////////////////\n\n")
+  print "\n\n////////////////////Called deletefstline().///////////////////////////\n\n"
   newpathlist=[]
   for path in pathlist:
-    file = open(path,encoding = 'utf-8',errors='ignore')
+    #file = open(path,encoding = 'utf-8',errors='ignore')
+    #codecs.open() can be specified with how to handle errors
+    #In python3.4, built-in open() function is also able to do this
+    #but not in python2.7
+    file = codecs.open(path,encoding = 'utf-8',errors='ignore')
     if file.closed:
-      print("failed to open the file.")
+      print"failed to open the file."
     lines = file.readlines()
     file.close()
     file = open (path+'.new.csv','w') #write to a new file
     for line in lines:
       if re.match(r'\D',line):
-        print ("  Deleted the line:\n","    ",line,"  in:",path)
+    #any line started with non-number character is comment
+        print "  Deleted the line:\n","    ",line,"  in:",path
         continue 
       #print(line)
       file.write(line)
@@ -66,9 +72,9 @@ def deletefstline(pathlist):
    
 def getNofPts():
   #This function returns the number of sampled points
-  csv_tmp = open('./postProcessing/sets/0/'+filename,encoding = 'utf-8',errors='replace')
+  csv_tmp = codecs.open('./postProcessing/sets/0/'+filename,encoding = 'utf-8',errors='replace')
   if csv_tmp.closed:
-    print("failed to open the file.")
+    print"failed to open the file."
   lines = csv_tmp.readlines()
   No = 0 
   for line in lines:
@@ -84,11 +90,11 @@ newpl=deletefstline(pathlist)#New:A list containing the full path of the file to
 if not(os.access('./postProcessing/history',os.F_OK)):
   os.mkdir('./postProcessing/history')
 else:
-  print("\n\n")
-  print("///////////////////////////////////////"*4)
-  print("Warning! The directory, './postProcessing/history', already exist!!\n\n")
-  print("///////////////////////////////////////"*4)
-  print("\n\n")
+  print"\n\n"
+  print"///////////////////////////////////////"*4
+  print"Warning! The directory, './postProcessing/history', already exist!!\n\n"
+  print"///////////////////////////////////////"*4
+  print"\n\n"
 
 
 #Create a list containing new files to be written
@@ -99,9 +105,9 @@ for i in range(Nopts):
 pos2=0
 for path in newpl:
   file = open(path,'r')
-  print ("Processing the following file:\n",path)
+  print "Processing the following file:\n",path
   if (file.closed):
-    print( "failed to open the file!")
+    print "failed to open the file!"
   #print(file.name)
   lines = file.readlines() 
   flag = 0
