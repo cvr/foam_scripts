@@ -38,14 +38,15 @@ then
 fi
 
 #if final time exist in processor* but does not exist in ./, run reconstructPar
-if [ -d processor0/$finalTime] $$ [ ! -d $finalTime ]
+if [ -d processor0/$finalTime ] && [ ! -d $finalTime ]
 then
     echo "final time computed. Run reconstructPar."
     reconstructPar -newTimes
 fi
 
-#if final time exist in ./, run sample
-if [ -d $finalTime ]
+#if final time exist in ./ but ./postProcessing/sets does not, run sample
+#if the scripts is interupted during this part, sample may not be completed
+if [ -d $finalTime ] && [ ! -d ./postProcessing/sets ]
 then
     echo "final time reconstructed. Run sample."
     sample
