@@ -175,7 +175,7 @@ def get_r_given_deltan(deltan,length,n,debug=0):
 #length is length of the edge
 #delta_n is size of last cell
 #n is total number of cells along this edge
-length=6
-delta_n=0.1
-n=120
-get_r_given_deltan(delta_n,length,n,debug = 2)
+#length=6
+#delta_n=0.1
+#n=120
+#get_r_given_deltan(delta_n,length,n,debug = 2)
