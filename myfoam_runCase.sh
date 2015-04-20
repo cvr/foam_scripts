@@ -30,21 +30,24 @@ then
     decomposePar -force
 fi
 
-#if final time file exist in processor*, we should run reconstructPar
-if [ -d processor0/$finalTime ]
+#if final time file does not exist in processor*, we should run solver
+if [ ! -d processor0/$finalTime ]
 then
-    if [ -d $finalTime ]
-    then
-        echo "final time reconstructed. Run sample."
-        sample
-    else
-        echo "final time computed. Run reconstructPar."
-        reconstructPar -newTimes
-    fi
-
-#else run solver
-else
     echo "Run interFoam."
     mpirun -np $nprocessor interFoam -parallel
+fi
+
+#if final time exist in processor* but does not exist in ./, run reconstructPar
+if [ -d processor0/$finalTime] $$ [ ! -d $finalTime ]
+then
+    echo "final time computed. Run reconstructPar."
+    reconstructPar -newTimes
+fi
+
+#if final time exist in ./, run sample
+if [ -d $finalTime ]
+then
+    echo "final time reconstructed. Run sample."
+    sample
 fi
 
