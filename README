@@ -1,0 +1,102 @@
+################################################################################
+-----------------------Documentation for myfoam scripts-------------------------
+################################################################################
+
+These are some useful scripts for pre-processing or post-processing for OpenFOAM.
+To use these scripts, put following two lines to your $HOME/.bashrc (suppose you put this folder at $HOME)
+export PATH=$PATH:$HOME/myfoam_scripts
+export PYTHONPATH=$PYTHONPATH:$FOAM_SCRIPTS
+
+Then you can use these scripts by typing its script name in case folder.
+
+1.Scripts introduction
+
+
+    myfoam_remove_timefiles
+    --------------------------------------------------------------------------------
+    This script will move all time files in a case to a new created file named 'timeFilesToBeRemoved'. 
+    After checking, you can manully remove the folder "timeFilesToBeRemoved"
+
+    To use this scripts, simply type 'myfoam_remove_timefiles' in case folder.
+
+
+
+    myfoam_write_blockMeshDict
+    --------------------------------------------------------------------------------
+    This script is used to write blockMeshDict when you need to deal with multiple blocks with nonuniform mesh.
+
+    Users do not have to compute mesh gradient or consider how to align blocks and faces in blockMeshDict.
+
+    It can automatically generate blockMeshDict in ./constant/polyMesh.
+    A log file named write_blockMeshDict.log will be created in ./constant/polyMesh for users to check their input and the result.
+
+    To use this script, following these steps:
+        1.Copy this script to current case folder (namely where you have folders like constant and system).
+        2.Edit this script with editor, according to the comments in it. 
+        3.Run it by typing './myfoam_write_blockMeshDict' in current case folder. (Don't miss './') 
+
+
+
+    myfoam_mesh_calculator
+    --------------------------------------------------------------------------------
+    This script is used to calculate parameters when you need to set up for nonuniform mesh.
+
+    3 Modes are available.
+
+        1.Users specify length of the edge, size of first cell and size of last cell.
+          It will compute and output following parameters: 
+          *ratio of size of last cell to first cell, delta_n/delta_1 
+          *total number of cells along this edge
+
+        2.Users specify length of the edge, size of first cell and number of cells along this edge.
+          It will compute and output following parameters: 
+          *ratio between two adjacent cells, r = delta_{i+1} / delta_{i}
+          *ratio of size of last cell to first cell, delta_n/delta_1 
+          *size of last cell
+
+        3.Users specify length of the edge, size of last cell and number of cells along this edge.
+          It will compute and output following parameters: 
+          *ratio between two adjacent cells, r = delta_{i+1} / delta_{i}
+          *ratio of size of last cell to first cell, delta_n/delta_1 
+          *size of first cell
+
+    To use this script, edit last part of this script with editor, according to the comments in it. 
+    Then run it in any folder by typing "myfoam_mesh_calculator".
+    Result will be output on monitor.
+    
+
+
+    myfoam_getSetsHistory_alpha1
+    --------------------------------------------------------------------------------
+    This script is used to get time history of wave height.
+    It will read data from ./postProcessing/sets/timefiles/gauge_name_alpha1.csv and then
+    generate a file named history_gauge_name_alph1.csv in ./postProcessing .
+    The first column in that file is time, and the second is wave height.
+
+    To use this script, use any editor to open it. then change 'filename' variable in that file
+    to gauge_name_alpha1.csv according to what is actually in your ./postProcessing/sets/timefiles .
+    Then run script by typing 'myfoam_getSetsHistory_alpha1' in current case folder.
+
+
+
+    myfoam_getSetsHistory_alpha1
+    --------------------------------------------------------------------------------
+    This script is used to get time history of sampled velocity.
+    It will read data from ./postProcessing/sets/timefiles/gauge_name_U.csv and then
+    generate some files named history_gauge_name_U.csv in ./postProcessing/history .
+    The first column in those files is time, the second is coordinates (based on direction
+    of your sampled line), the third is Ux, the fourth Uy and the last is Uz.
+
+    To use this script, use any editor to open it. then change 'filename' variable in that file
+    to gauge_name_U.csv according to what is actually in your ./postProcessing/sets/timefiles .
+    Then run script by typing 'myfoam_getSetsHistory_U' in current case folder.
+
+
+    myfoam_getforcesHistory
+    --------------------------------------------------------------------------------
+    If your case was interupted during the running, you may get several forces.dat files 
+    which you want to build a complete force data file from.
+    This file is written to handle this.
+
+    (It was originally written with python3.4 and I have not had time to convert it to 
+    python2.7 yet, which is available on hyak.)
