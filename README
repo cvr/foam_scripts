@@ -87,7 +87,7 @@ Then you can use these scripts by typing its script name in case folder.
     The first column in those files is time, the second is coordinates (based on direction
     of your sampled line), the third is Ux, the fourth Uy and the last is Uz.
 
-    To use this script, use any editor to open it. then change 'filename' variable in that file
+    To use this script, use any editor to open it. Then change 'filename' variable in that file
     to gauge_name_U.csv according to what is actually in your ./postProcessing/sets/timefiles .
     Then run script by typing 'myfoam_getSetsHistory_U' in current case folder.
 
@@ -97,6 +97,13 @@ Then you can use these scripts by typing its script name in case folder.
     If your case was interupted during the running, you may get several forces.dat files 
     which you want to build a complete force data file from.
     This file is written to handle this.
+    It will also delete the comment and parentheses in those forces.dat files and concatenate
+    each element in one row with ",", which is a standard csv file. 
+    The new csv file will be put in ./postProcessing
 
-    (It was originally written with python3.4 and I have not had time to convert it to 
-    python2.7 yet, which is available on hyak.)
+    To use this script, use any editor to open it. 
+    There is a input section at the beginning of this file where you should modify the name
+    and path of the files forces.dat if they are not named and put as default value.
+
+
+

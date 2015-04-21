@@ -1,14 +1,24 @@
-#!/usr/bin/python3.4
+#!/usr/bin/python
 #author:shawn
 #date:Nov 04, 2014
+#updated for python2.7 on 04/21/2015
 
 import os
 import csv
 import re
+
+######################################################################
+#input start
 #directory to process
-path="./postProcessing/forces2"
+path="./postProcessing/forces"
 #This is the filename in each time directories.
 filename='forces.dat'
+#end of input
+######################################################################
+
+
+######################################################################
+#do not modify contents below
 
 def mysort(tobesorted):
   'This function sort a list of floating numbers in ascending order.'
@@ -40,7 +50,7 @@ def getpathlist():
     list[i]=(path+'/'+list[i]+'/'+filename)
   return list
 
-####################################################################################################
+######################################################################
 #main part
 
 tobewritten = open('./postProcessing/forces.csv','w')
@@ -50,7 +60,7 @@ latestTime=0
 for path in pathlist:
   file = open(path,'r')
   if (file.closed):
-    print( "failed to open the file!")
+    print "failed to open the file!"
 
   for line in file:
     if not line.startswith("#"):#line that starts with "#" is a comment 
