@@ -9,7 +9,7 @@ import re
 import codecs
 #directory to process
 path="./postProcessing/sets"
-filename='origin_U.csv'
+filename='a1_U.csv'
 
 def mysort(tobesorted):
   """This function sort a list of float in ascending order."""
@@ -70,9 +70,9 @@ def deletefstline(pathlist):
   
   
    
-def getNofPts():
+def getNofPts(time):
   #This function returns the number of sampled points
-  csv_tmp = codecs.open('./postProcessing/sets/0/'+filename,encoding = 'utf-8',errors='replace')
+  csv_tmp = codecs.open('./postProcessing/sets/'+time+'/'+filename,encoding = 'utf-8',errors='replace')
   if csv_tmp.closed:
     print"failed to open the file."
   lines = csv_tmp.readlines()
@@ -83,8 +83,8 @@ def getNofPts():
 
 #################################################################################################
 #main part
-Nopts=getNofPts()#Find out how many points are sampled.
 filelist=getfilelist()#A list containing the name of time directories. E.g. ['0','0.05','0.1',...]
+Nopts=getNofPts(filelist[0])#Find out how many points are sampled.
 pathlist=getpathlist()#A list containing the full path of the file to be processed in each time directory. 
 newpl=deletefstline(pathlist)#New:A list containing the full path of the file to be processed in each time directory. 
 if not(os.access('./postProcessing/history',os.F_OK)):
