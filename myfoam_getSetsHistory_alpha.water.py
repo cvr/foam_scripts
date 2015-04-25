@@ -4,6 +4,7 @@
 
 import os
 import csv
+import sys,getopt
 #directory to process
 path="./postProcessing/sets"
 #This is the filename in each time directories.
@@ -32,7 +33,7 @@ def getfilelist():
   return list
 
 
-def getpathlist():
+def getpathlist(filename):
   'return list of full paths of the csv files to be processed, ordered by value of the names of time files containing them. The element of the list is in the type of string'
   list = getfilelist() 
   for i in range(len(list)):
@@ -41,37 +42,64 @@ def getpathlist():
 
 ####################################################################################################
 #main part
-
-results=[['time','waveheight']]
-csvfile = open('./postProcessing/history_'+filename,'w')
-writer=csv.writer(csvfile,delimiter=',')
-filelist=getfilelist()
-pathlist=getpathlist()    
-flag=0
-
-for path in pathlist:
-  file = open(path,'r')
-  if (file.closed):
-    print "failed to open the file!"
-  #print(file.name)
-  reader=csv.reader(file) 
-  alpha1=1
-  dist1=1
-  for row in reader:
-    if row[0]=='distance':
-      continue
-    dist2=float(row[0])
-    alpha2=float(row[1])
-    #Define the water surface as where alpha1==0.5 and get the z coordinate value of that point by interpolation.
-    if ((alpha1-0.5)*(alpha2-0.5))<0:
-      #print(row)
-      waveheight=(dist1-dist2)/(alpha1-alpha2)*0.5+(alpha1*dist2-alpha2*dist1)/(alpha1-alpha2)
-      writer.writerow([filelist[flag],waveheight]) 
-      #results=results+[[filelist[flag],row[0]]]    
-      break
-    #These two variables store current line for next iteration.
-    dist1=dist2
-    alpha1=alpha2
-  flag+=1
+def main(argv,input_filename,input_path):
+    default_filename = True
+    default_path = True
+    try:
+       opts, args = getopt.getopt(argv,"i:p:",["ifile=","ipath="])
+       #opts is a list of (option, value) pairs. 
+       #args is the list of program arguments left after the option list was stripped.
+    except getopt.GetoptError:
+       print 'invalid options'
+       print 'myfoam_getSetsHistory_U -i <input file name> -p <input file path>'
+       sys.exit(2)
+    for opt, arg in opts:
+       if opt in ("-i", "--ifile"):
+          filename = arg
+          default_filename = False
+       elif opt in ("-p", "--ipath"):
+          path = arg
+          default_path = False
+    if default_filename == True:
+        filename = input_filename
+    if default_path == True:
+        path = input_path
 
 
+    print "name of input files:",filename
+    print "input file path:",path
+
+    results=[['time','waveheight']]
+    csvfile = open('./postProcessing/history_'+filename,'w')
+    writer=csv.writer(csvfile,delimiter=',')
+    filelist=getfilelist()
+    pathlist=getpathlist(filename)    
+    flag=0
+
+    for path in pathlist:
+      file = open(path,'r')
+      if (file.closed):
+        print "failed to open the file!"
+      #print(file.name)
+      reader=csv.reader(file) 
+      alpha1=1
+      dist1=1
+      for row in reader:
+        if row[0]=='distance':
+          continue
+        dist2=float(row[0])
+        alpha2=float(row[1])
+        #Define the water surface as where alpha1==0.5 and get the z coordinate value of that point by interpolation.
+        if ((alpha1-0.5)*(alpha2-0.5))<0:
+          #print(row)
+          waveheight=(dist1-dist2)/(alpha1-alpha2)*0.5+(alpha1*dist2-alpha2*dist1)/(alpha1-alpha2)
+          writer.writerow([filelist[flag],waveheight]) 
+          #results=results+[[filelist[flag],row[0]]]    
+          break
+        #These two variables store current line for next iteration.
+        dist1=dist2
+        alpha1=alpha2
+      flag+=1
+
+#main part
+main(sys.argv[1:],filename,path)
