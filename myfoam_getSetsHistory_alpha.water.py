@@ -82,23 +82,31 @@ def main(argv,input_filename,input_path):
         print "failed to open the file!"
       #print(file.name)
       reader=csv.reader(file) 
-      alpha1=1
-      dist1=1
+      first_loop = True
       for row in reader:
         if row[0]=='distance':
+          continue
+        if first_loop == True:#In first loop, do not interpolate
+          dist1=float(row[0])
+          alpha1=float(row[1])
+          first_loop = False
+          if alpha1<0.5:#alpha1 in first cell is less than 0.5 => water depth = 0
+            writer.writerow([filelist[flag],dist1]) 
+            break
           continue
         dist2=float(row[0])
         alpha2=float(row[1])
         #Define the water surface as where alpha1==0.5 and get the z coordinate value of that point by interpolation.
         if ((alpha1-0.5)*(alpha2-0.5))<0:
-          #print(row)
           waveheight=(dist1-dist2)/(alpha1-alpha2)*0.5+(alpha1*dist2-alpha2*dist1)/(alpha1-alpha2)
           writer.writerow([filelist[flag],waveheight]) 
           #results=results+[[filelist[flag],row[0]]]    
+          write_status = True
           break
         #These two variables store current line for next iteration.
         dist1=dist2
         alpha1=alpha2
+
       flag+=1
 
 #main part
