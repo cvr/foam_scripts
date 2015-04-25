@@ -7,9 +7,11 @@ import os
 import csv
 import re
 import codecs
+import sys,getopt
 #directory to process
 path="./postProcessing/sets"
 filename='a1_U.csv'
+
 
 def mysort(tobesorted):
   """This function sort a list of float in ascending order."""
@@ -60,7 +62,7 @@ def deletefstline(pathlist):
     for line in lines:
       if re.match(r'\D',line):
     #any line started with non-number character is comment
-        print "  Deleted the line:\n","    ",line,"  in:",path
+        #print "  Deleted the line:\n","    ",line,"  in:",path
         continue 
       #print(line)
       file.write(line)
@@ -81,44 +83,68 @@ def getNofPts(time):
       No += 1
   return No-1
 
-#################################################################################################
-#main part
-filelist=getfilelist()#A list containing the name of time directories. E.g. ['0','0.05','0.1',...]
-Nopts=getNofPts(filelist[0])#Find out how many points are sampled.
-pathlist=getpathlist()#A list containing the full path of the file to be processed in each time directory. 
-newpl=deletefstline(pathlist)#New:A list containing the full path of the file to be processed in each time directory. 
-if not(os.access('./postProcessing/history',os.F_OK)):
-  os.mkdir('./postProcessing/history')
-else:
-  print"\n\n"
-  print"///////////////////////////////////////"*4
-  print"Warning! The directory, './postProcessing/history', already exist!!\n\n"
-  print"///////////////////////////////////////"*4
-  print"\n\n"
+
+def main(argv,input_filename,input_path):
+    default_filename = True
+    default_path = True
+    try:
+       opts, args = getopt.getopt(argv,"i:p:",["ifile=","ipath="])
+       #opts is a list of (option, value) pairs. 
+       #args is the list of program arguments left after the option list was stripped.
+    except getopt.GetoptError:
+       print 'invalid options'
+       print 'myfoam_getSetsHistory_U -i <input file name> -p <input file path>'
+       sys.exit(2)
+    for opt, arg in opts:
+       if opt in ("-i", "--ifile"):
+          filename = arg
+          default_filename = False
+       elif opt in ("-p", "--ipath"):
+          path = arg
+          default_path = False
+    if default_filename == True:
+        filename = input_filename
+    if default_path == True:
+        path = input_path
+
+
+    print "name of input files:",filename
+    print "input file path:",path
+    filelist=getfilelist()#A list containing the name of time directories. E.g. ['0','0.05','0.1',...]
+    Nopts=getNofPts(filelist[0])#Find out how many points are sampled.
+    pathlist=getpathlist()#A list containing the full path of the file to be processed in each time directory. 
+    newpl=deletefstline(pathlist)#New:A list containing the full path of the file to be processed in each time directory. 
+    if not(os.access('./postProcessing/history',os.F_OK)):
+      os.mkdir('./postProcessing/history')
+    else:
+      print"\n"
+      print"********************************************************************************"
+      print"Warning! The directory, './postProcessing/history', already exists!!\n"
+      print"********************************************************************************"
+      print"\n"
 
 
 #Create a list containing new files to be written
-newfile=[]
-for i in range(Nopts):
-  newfile.append(open('./postProcessing/history/'+filename+'.point_'+str(i)+'.csv','w'))
+    newfile=[]
+    for i in range(Nopts):
+      newfile.append(open('./postProcessing/history/'+filename+'.point_'+str(i)+'.csv','w'))
 
-pos2=0
-for path in newpl:
-  file = open(path,'r')
-  print "Processing the following file:\n",path
-  if (file.closed):
-    print "failed to open the file!"
-  #print(file.name)
-  lines = file.readlines() 
-  flag = 0
-  for line in lines:
-    time = filelist[newpl.index(path)]
-    line = time +','+line
-    newfile[flag].write(line)
-    flag += 1
+    pos2=0
+    for path in newpl:
+      file = open(path,'r')
+      #print "Processing the following file:\n",path
+      if (file.closed):
+        print "failed to open the file!"
+      #print(file.name)
+      lines = file.readlines() 
+      flag = 0
+      for line in lines:
+        time = filelist[newpl.index(path)]
+        line = time +','+line
+        newfile[flag].write(line)
+        flag += 1
   
-'''
-  for j in range(len(results[i])):
-    file.write(results[i][j])
-'''
 
+#################################################################################################
+#main part
+main(sys.argv[1:],filename,path)
