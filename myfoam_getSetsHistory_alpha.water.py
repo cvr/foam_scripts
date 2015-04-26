@@ -77,15 +77,21 @@ def main(argv,input_filename,input_path):
     flag=0
 
     for path in pathlist:
-      file = open(path,'r')
-      if (file.closed):
-        print "failed to open the file!"
+      try:
+          file = open(path,'r')
+      except IOError:
+          print "Failed to open the file: ",path
+          print "It may not exist."
+          print "Ignored this time file"
+          flag+=1
+          continue
       #print(file.name)
       reader=csv.reader(file) 
       first_loop = True
       for row in reader:
         if row[0]=='distance':
           continue
+
         if first_loop == True:#In first loop, do not interpolate
           dist1=float(row[0])
           alpha1=float(row[1])
@@ -94,6 +100,7 @@ def main(argv,input_filename,input_path):
             writer.writerow([filelist[flag],dist1]) 
             break
           continue
+
         dist2=float(row[0])
         alpha2=float(row[1])
         #Define the water surface as where alpha1==0.5 and get the z coordinate value of that point by interpolation.
@@ -101,7 +108,6 @@ def main(argv,input_filename,input_path):
           waveheight=(dist1-dist2)/(alpha1-alpha2)*0.5+(alpha1*dist2-alpha2*dist1)/(alpha1-alpha2)
           writer.writerow([filelist[flag],waveheight]) 
           #results=results+[[filelist[flag],row[0]]]    
-          write_status = True
           break
         #These two variables store current line for next iteration.
         dist1=dist2
