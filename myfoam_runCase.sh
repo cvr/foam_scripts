@@ -26,6 +26,8 @@ then
     [ -d 0 ] && { rm -r ./0; echo "removed old 0 file";} || { echo "0 file does not exist";}
     cp ./0.org ./0 -r
     blockMesh
+    surfaceFeatureExtract
+    SnappyHexMesh
     setFields
     decomposePar -force
 fi
