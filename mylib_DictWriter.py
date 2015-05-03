@@ -1,14 +1,17 @@
 #!/usr/bin/python
 import sys
 
+#--------------------------------------------------------------------#
+#                        write_blockMeshDict                         #
+#--------------------------------------------------------------------#
 #def write_blockMeshDict(x_pts,y_pts,z_pts,nx,ny,nz,polyMeshDir = './constant/polyMesh'):
 def write_blockMeshDict(x_pts,y_pts,z_pts,x_size,y_size,z_size,polyMeshDir = './constant/polyMesh'):
-#x_pts is a list specifying x coordinates of vertices along x axis
-#y_pts is a list specifying y coordinates of vertices along y axis
-#z_pts is a list specifying z coordinates of vertices along z axis
-#nx is a list specifying number of cells along each edge along x axis. Length of nx = Length of x_pts - 1.
-#ny is a list specifying number of cells along each edge along y axis. Length of ny = Length of y_pts - 1.
-#nz is a list specifying number of cells along each edge along z axis. Length of nz = Length of z_pts - 1.
+    #x_pts is a list specifying x coordinates of vertices along x axis
+    #y_pts is a list specifying y coordinates of vertices along y axis
+    #z_pts is a list specifying z coordinates of vertices along z axis
+    #nx is a list specifying number of cells along each edge along x axis. Length of nx = Length of x_pts - 1.
+    #ny is a list specifying number of cells along each edge along y axis. Length of ny = Length of y_pts - 1.
+    #nz is a list specifying number of cells along each edge along z axis. Length of nz = Length of z_pts - 1.
     import os.path
 
     n_xpts=len(x_pts) #number of vertices along x axis
@@ -217,7 +220,6 @@ def write_blockMeshDict(x_pts,y_pts,z_pts,x_size,y_size,z_size,polyMeshDir = './
     mesh_file.write(');\n')
     mesh_file.close()
 
-
 #test - simple one block
 #x_pts=[-3.2,9.6]
 #y_pts=[-3.2,3.2]
@@ -227,15 +229,294 @@ def write_blockMeshDict(x_pts,y_pts,z_pts,x_size,y_size,z_size,polyMeshDir = './
 #z_size=[[0.02,0.05]]
 #write_blockMeshDict(x_pts,y_pts,z_pts,x_size,y_size,z_size)
 
-
-
 #test - multi-block
-x_pts=[-4.5,-0.75,0.75,12.75]
-y_pts=[-6.75,-0.75,0.75,6.75]
-z_pts=[0.,0.7,1.0]
-#x_size=[[delta1_1,deltan_1],[delta1_2,deltan_2],...]
-x_size=[[0.2,0.05],[0.05,0.05],[0.05,0.5]]
-y_size=[[0.2,0.05],[0.05,0.05],[0.05,0.2]]
-z_size=[[0.05,0.05],[0.05,0.1]]
-#write_blockMeshDict(x_pts,y_pts,z_pts,nx,ny,nz)    
-write_blockMeshDict(x_pts,y_pts,z_pts,x_size,y_size,z_size)
+#x_pts=[-4.5,-0.75,0.75,12.75]
+#y_pts=[-6.75,-0.75,0.75,6.75]
+#z_pts=[0.,0.7,1.0]
+##x_size=[[delta1_1,deltan_1],[delta1_2,deltan_2],...]
+#x_size=[[0.2,0.05],[0.05,0.05],[0.05,0.5]]
+#y_size=[[0.2,0.05],[0.05,0.05],[0.05,0.2]]
+#z_size=[[0.05,0.05],[0.05,0.1]]
+##write_blockMeshDict(x_pts,y_pts,z_pts,nx,ny,nz)    
+#write_blockMeshDict(x_pts,y_pts,z_pts,x_size,y_size,z_size)
+
+
+#--------------------------------------------------------------------#
+#                      write_snappyHexMeshDict                       #
+#--------------------------------------------------------------------#
+def write_snappyHexMeshDict(para,systemDir = './system'):
+    #para is a python dictionary containing the parameters
+    #In current version para should contain at least these keys:
+    #stl_name,patch_name,eMesh_name
+    import os
+    dict_file = open(os.path.join(systemDir, 'snappyHexMeshDict'), 'w')
+    log_file = open(os.path.join(systemDir, 'write_snappyHexMeshDict.log'), 'w')
+    log_file.write('Input dictionary contains these parameters:\n')
+    for (key,value) in para.items():
+        line=str(key)+': '+str(value)+'\n'
+        log_file.write(line)
+    dict_file.write('/*--------------------------------*- C++ -*----------------------------------*/\n')
+    dict_file.write('FoamFile\n')
+    dict_file.write('{\n')
+    dict_file.write('  version 2.0;\n')
+    dict_file.write('  format  ascii;\n')
+    dict_file.write('  class   dictionary;\n')
+    dict_file.write('  object  snappyHexMeshDict;\n')
+    dict_file.write('}\n')
+    dict_file.write('castellatedMesh true;\n')
+    dict_file.write('snap            true;\n')
+    dict_file.write('addLayers       false;\n')
+    dict_file.write('// Geometry. Definition of all surfaces. All surfaces are of class\n')
+    dict_file.write('geometry\n')
+    dict_file.write('{\n')
+    if 'stl_name' in para:
+        dict_file.write('    '+para['stl_name']+'\n')
+    else:
+        print 'must specify name of stl file in para'
+        sys.exit()
+    dict_file.write('    {\n')
+    dict_file.write('        type triSurfaceMesh;\n')
+    if 'patch_name' in para:
+        dict_file.write('        name '+para['patch_name']+';\n')
+    else:
+        print 'must specify name of stl file in para'
+        sys.exit()
+
+    dict_file.write('    }\n')
+
+    #can add refinementBox dictionary here
+
+    dict_file.write('};\n')
+
+
+    dict_file.write('\n')
+    dict_file.write('\n')
+
+
+    dict_file.write('// Settings for the castellatedMesh generation.\n')
+    dict_file.write('castellatedMeshControls\n')
+    dict_file.write('{\n')
+
+    dict_file.write('    maxLocalCells 100000000;\n')
+    dict_file.write('    maxGlobalCells 100000000;\n')
+    dict_file.write('    minRefinementCells 1;\n')
+    dict_file.write('    maxLoadUnbalance 0.30;\n')
+    dict_file.write('    nCellsBetweenLevels 4;//For details, see:http://openfoamwiki.net/index.php/SnappyHexMesh#castellatedMeshControls\n')
+
+    dict_file.write('    features\n')
+    dict_file.write('    (\n')
+    dict_file.write('        {\n')
+    if 'eMesh_name' in para:
+        dict_file.write('            file "'+para['eMesh_name']+'";\n')
+    else:
+        print 'must specify name of eMesh file in para'
+        sys.exit()
+    dict_file.write('            level 2;\n')
+    dict_file.write('        }\n')
+    dict_file.write('    );\n')
+
+    dict_file.write('    // Surface based refinement\n')
+    dict_file.write('    // Specifies two levels for every surface. The first is the minimum level,\n')
+    dict_file.write('    // every cell intersecting a surface gets refined up to the minimum level.\n')
+    dict_file.write('    refinementSurfaces\n')
+    dict_file.write('    {\n')
+    dict_file.write('        '+para['patch_name']+'\n')
+    dict_file.write('        {\n')
+    dict_file.write('            // Surface-wise min and max refinement level\n')
+    dict_file.write('            level (1 2);\n')
+    dict_file.write('        }\n')
+    dict_file.write('    }\n')
+
+    dict_file.write('    // Resolve sharp angles\n')
+    dict_file.write('    resolveFeatureAngle 75;\n')
+    dict_file.write('refinementRegions\n')
+    dict_file.write('{\n')
+    dict_file.write('}\n')
+    dict_file.write('    locationInMesh (2 2 0.8);\n')
+    dict_file.write('    allowFreeStandingZoneFaces true;\n')
+    dict_file.write('}\n')
+
+
+    dict_file.write('// Settings for the snapping.\n')
+    dict_file.write('snapControls\n')
+
+    dict_file.write('{\n')
+    dict_file.write('    nSmoothPatch 3;\n')
+    dict_file.write('    tolerance 4;\n')
+    dict_file.write('    nSolveIter 30;\n')
+    dict_file.write('    nRelaxIter 5;\n')
+    dict_file.write('    nFeatureSnapIter 10;\n')
+    dict_file.write('    implicitFeatureSnap false;\n')
+    dict_file.write('    explicitFeatureSnap true;\n')
+    dict_file.write('    multiRegionFeatureSnap false;\n')
+    dict_file.write('}\n')
+    dict_file.write('addLayersControls\n')
+    dict_file.write('{\n')
+    dict_file.write('    relativeSizes true;\n')
+    dict_file.write('    layers\n')
+    dict_file.write('    {\n')
+    dict_file.write('	'+para['patch_name']+'\n')
+    dict_file.write('        {\n')
+    dict_file.write('            nSurfaceLayers 3;\n')
+    dict_file.write('        }\n')
+    dict_file.write('    }\n')
+    dict_file.write('    expansionRatio 1.1;\n')
+    dict_file.write('    finalLayerThickness 0.9;\n')
+    dict_file.write('    minThickness 0.5;\n')
+    dict_file.write('    nGrow 0;\n')
+    dict_file.write('    featureAngle 60;\n')
+    dict_file.write('    slipFeatureAngle 30;\n')
+    dict_file.write('    nRelaxIter 3;\n')
+    dict_file.write('    nSmoothSurfaceNormals 1;\n')
+    dict_file.write('    nSmoothNormals 3;\n')
+    dict_file.write('    nSmoothThickness 10;\n')
+    dict_file.write('    maxFaceThicknessRatio 0.5;\n')
+    dict_file.write('    maxThicknessToMedialRatio 0.3;\n')
+    dict_file.write('    minMedianAxisAngle 90;\n')
+    dict_file.write('    nBufferCellsNoExtrude 0;\n')
+    dict_file.write('    nLayerIter 50;\n')
+    dict_file.write('}\n')
+    dict_file.write('meshQualityControls\n')
+    dict_file.write('{\n')
+    dict_file.write('    maxNonOrtho 65;\n')
+    dict_file.write('    maxBoundarySkewness 20;\n')
+    dict_file.write('    maxInternalSkewness 4;\n')
+    dict_file.write('    maxConcave 80;\n')
+    dict_file.write('    minFlatness 0.5;\n')
+    dict_file.write('    minVol 1e-13;\n')
+    dict_file.write('    minTetQuality 1e-30;\n')
+    dict_file.write('    minArea -1;\n')
+    dict_file.write('    minTwist 0.05;\n')
+    dict_file.write('    minDeterminant 0.001;\n')
+    dict_file.write('    minFaceWeight 0.05;\n')
+    dict_file.write('    minVolRatio 0.01;\n')
+    dict_file.write('    minTriangleTwist -1;\n')
+    dict_file.write('    nSmoothScale 4;\n')
+    dict_file.write('    errorReduction 0.75;\n')
+    dict_file.write('    relaxed\n')
+    dict_file.write('    {\n')
+    dict_file.write('        maxNonOrtho 75;\n')
+    dict_file.write('    }\n')
+    dict_file.write('}\n')
+    dict_file.write('debug 0;\n')
+    dict_file.write('mergeTolerance 1e-6;\n')
+
+
+#--------------------------------------------------------------------#
+#                  write_surfaceFeatureExtractDict                   #
+#--------------------------------------------------------------------#
+def write_surfaceFeatureExtractDict(para,systemDir='./system'):
+    #para is a python dictionary containing the parameters
+    #para should at least contain these keys:
+    #stl_name
+    import os
+    dict_file = open(os.path.join(systemDir, 'surfaceFeatureExtractDict'), 'w')
+    log_file = open(os.path.join(systemDir, 'write_surfaceFeatureExtractDict.log'), 'w')
+    log_file.write('Input dictionary contains these parameters:\n')
+    for (key,value) in para.items():
+        line=str(key)+': '+str(value)+'\n'
+        log_file.write(line)
+    dict_file.write('/*--------------------------------*- C++ -*----------------------------------*/\n')
+    dict_file.write('FoamFile\n')
+    dict_file.write('{\n')
+    dict_file.write('  version 2.0;\n')
+    dict_file.write('  format  ascii;\n')
+    dict_file.write('  class   dictionary;\n')
+    dict_file.write('  object  surfaceFeatureExtractDict;\n')
+    dict_file.write('}\n')
+    if 'stl_name' in para:
+        dict_file.write(para['stl_name']+'\n')
+    else:
+        print 'must specify name of stl file in para'
+        sys.exit()
+    dict_file.write('{\n')
+    dict_file.write('    extractionMethod    extractFromSurface;\n')
+    dict_file.write('    extractFromSurfaceCoeffs\n')
+    dict_file.write('    {\n')
+    dict_file.write('        includedAngle   150;\n')
+    dict_file.write('    }\n')
+    dict_file.write('    subsetFeatures\n')
+    dict_file.write('    {\n')
+    dict_file.write('        nonManifoldEdges       no;\n')
+    dict_file.write('        openEdges       yes;\n')
+    dict_file.write('    }\n')
+    dict_file.write('    writeObj                yes;\n')
+    dict_file.write('}\n')
+
+
+#--------------------------------------------------------------------#
+#                      write_myfoam_runCase.sh                       #
+#--------------------------------------------------------------------#
+def write_myfoam_runCase(para,dir='./'):
+    #para is a python dictionary containing the parameters
+    #para should at least contain these keys:
+    #case_name,case_dir
+
+    import os
+    output_file = open(os.path.join(dir, 'myfoam_runCase.sh'), 'w')
+    log_file = open(os.path.join(dir, 'write_myfoam_runCase.log'), 'w')
+    log_file.write('Input dictionary contains these parameters:\n')
+    for (key,value) in para.items():
+        line=str(key)+': '+str(value)+'\n'
+        log_file.write(line)
+
+
+    output_file.write('#!/bin/bash\n')
+    if 'case_name' in para:
+        output_file.write('#PBS -N '+para['case_name']+'\n')
+    else:
+        print 'must specify case name in para'
+        sys.exit()
+
+    output_file.write('#PBS -l walltime=05:00:00,nodes=1:ppn=16\n')
+    if 'case_dir' in para:
+        output_file.write('#PBS -d '+para['case_dir']+'\n')
+        output_file.write('#PBS -o '+para['case_dir']+'\n')
+    else:
+        print 'must specify case path in para'
+        sys.exit()
+    output_file.write('#PBS -j oe\n')
+    output_file.write('#PBS -m abe\n')
+    output_file.write('#PBS -W group_list=hyak-motley\n')
+    output_file.write('##PBS -W group_list=hyak-lehman\n')
+    output_file.write('module load icc_14.0-impi_4.1.1\n')
+    output_file.write('source /gscratch/motley/shared/OpenFOAM231/OpenFOAM-2.3.1/etc/bashrc\n')
+    output_file.write('finalTime=50\n')
+    output_file.write('nprocessor=16\n')
+    output_file.write('#If decomposed files exist, we should execute solver\n')
+    output_file.write('if  [ ! -d processor0 ]  \n')
+    output_file.write('then\n')
+    output_file.write('    echo "decomposed files not found. Pre-process the case."\n')
+    output_file.write('    [ -d 0 ] && { rm -r ./0; echo "removed old 0 file";} || { echo "0 file does not exist";}\n')
+    output_file.write('    cp ./0.org ./0 -r\n')
+    output_file.write('    blockMesh\n')
+    output_file.write('    surfaceFeatureExtract\n')
+    output_file.write('    snappyHexMesh\n')
+    output_file.write('    rm ./constant/polyMesh -r\n')
+    output_file.write('    rm ./0.001 -r\n')
+    output_file.write('    cp ./0.002/polyMesh ./constant -r\n')
+    output_file.write('    setFields\n')
+    output_file.write('    decomposePar -force\n')
+    output_file.write('fi\n')
+    output_file.write('#if final time file does not exist in processor*, we should run solver\n')
+    output_file.write('if [ ! -d processor0/$finalTime ]\n')
+    output_file.write('then\n')
+    output_file.write('    echo "Run interFoam."\n')
+    output_file.write('    mpirun -np $nprocessor interFoam -parallel\n')
+    output_file.write('fi\n')
+    output_file.write('#if final time exist in processor* but does not exist in ./, run reconstructPar\n')
+    output_file.write('if [ -d processor0/$finalTime ] && [ ! -d $finalTime ]\n')
+    output_file.write('then\n')
+    output_file.write('    echo "final time computed. Run reconstructPar."\n')
+    output_file.write('    reconstructPar -newTimes\n')
+    output_file.write('fi\n')
+    output_file.write('#if final time exist in ./ but ./postProcessing/sets does not, run sample\n')
+    output_file.write('#if the scripts is interupted during this part, sample may not be completed\n')
+    output_file.write('if [ -d $finalTime ] && [ ! -d ./postProcessing/sets ]\n')
+    output_file.write('then\n')
+    output_file.write('    echo "final time reconstructed. Run sample."\n')
+    output_file.write('    sample\n')
+    output_file.write('fi\n')
+    output_file.write('myfoam_getforcesHistory\n')
+    output_file.write('./myfoam_getAveragedForce\n')
+
