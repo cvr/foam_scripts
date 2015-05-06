@@ -445,6 +445,62 @@ def write_surfaceFeatureExtractDict(para,systemDir='./system'):
 
 
 #--------------------------------------------------------------------#
+#                         write_setFieldsDict                        #
+#--------------------------------------------------------------------#
+def write_setFieldsDict(para,systemDir='./system'):
+    #para is a python dictionary containing the parameters
+    #para should at least contain these keys:
+    #water_depth
+    import os
+    dict_file = open(os.path.join(systemDir, 'setFieldsDict'), 'w')
+    log_file = open(os.path.join(systemDir, 'write_setFieldsDict.log'), 'w')
+    log_file.write('Input dictionary contains these parameters:\n')
+    for (key,value) in para.items():
+        line=str(key)+': '+str(value)+'\n'
+        log_file.write(line)
+    dict_file.write('/*--------------------------------*- C++ -*----------------------------------*/\n')
+    dict_file.write('FoamFile\n')
+    dict_file.write('{\n')
+    dict_file.write('  version 2.0;\n')
+    dict_file.write('  format  ascii;\n')
+    dict_file.write('  class   dictionary;\n')
+    dict_file.write('  object  setFieldsDict;\n')
+    dict_file.write('}\n')
+
+    dict_file.write('defaultFieldValues\n')
+    dict_file.write('(\n')
+    dict_file.write('    volScalarFieldValue alpha.water 0\n')
+    dict_file.write(');\n')
+    dict_file.write('regions\n')
+    dict_file.write('(\n')
+    dict_file.write('    boxToCell\n')
+    dict_file.write('    {\n')
+    if 'water_depth' in para:
+        dict_file.write('        box (-999 -999 -999) (999 999 '+para['water_depth']+');\n')
+    else:
+        print 'must specify name of water_depth in para'
+        sys.exit()
+    dict_file.write('        fieldValues\n')
+    dict_file.write('        (\n')
+    dict_file.write('            volScalarFieldValue alpha.water 1\n')
+    dict_file.write('        );\n')
+    dict_file.write('    }\n')
+    dict_file.write('    boxToFace\n')
+    dict_file.write('    {\n')
+    if 'water_depth' in para:
+        dict_file.write('        box (-999 -999 -999) (999 999 '+para['water_depth']+');\n')
+    else:
+        print 'must specify name of water_depth in para'
+        sys.exit()
+    dict_file.write('        fieldValues\n')
+    dict_file.write('        (\n')
+    dict_file.write('            volScalarFieldValue alpha.water 1\n')
+    dict_file.write('        );\n')
+    dict_file.write('    }\n')
+    dict_file.write(');\n')
+
+
+#--------------------------------------------------------------------#
 #                      write_myfoam_runCase.sh                       #
 #--------------------------------------------------------------------#
 def write_myfoam_runCase(para,dir='./'):
@@ -492,9 +548,12 @@ def write_myfoam_runCase(para,dir='./'):
     output_file.write('    blockMesh\n')
     output_file.write('    surfaceFeatureExtract\n')
     output_file.write('    snappyHexMesh\n')
+    output_file.write('    mkdir mesh\n')
+    output_file.write('    cp ./constant ./mesh -r\n')
+    output_file.write('    mv ./0.001 ./mesh\n')
+    output_file.write('    mv ./0.002 ./mesh\n')
     output_file.write('    rm ./constant/polyMesh -r\n')
-    output_file.write('    rm ./0.001 -r\n')
-    output_file.write('    cp ./0.002/polyMesh ./constant -r\n')
+    output_file.write('    cp ./mesh/0.002/polyMesh ./constant -r\n')
     output_file.write('    setFields\n')
     output_file.write('    decomposePar -force\n')
     output_file.write('fi\n')
@@ -517,6 +576,6 @@ def write_myfoam_runCase(para,dir='./'):
     output_file.write('    echo "final time reconstructed. Run sample."\n')
     output_file.write('    sample\n')
     output_file.write('fi\n')
-    output_file.write('myfoam_getforcesHistory\n')
-    output_file.write('./myfoam_getAveragedForce\n')
+    output_file.write('myfoam_getforcesHistory.py\n')
+    output_file.write('myfoam_getAveragedForce.py\n')
 

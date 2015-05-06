@@ -14,7 +14,7 @@ for row in reader:
     list.append(force1)
 force=np.array(list)
 #force=force.astype(np.float)
-force=force[1000:]#before 1000, force may be not steady
+force=force[int(force.shape[0]*1./4):]#use later quarter of the data as steady state
 average=np.average(force)
 std=np.std(force)
 output_path= '../../forces_analysis'
