@@ -8,9 +8,6 @@ import csv
 import re
 import codecs
 import sys,getopt
-#directory to process
-path="./postProcessing/sets"
-filename='a1_U.csv'
 
 
 def mysort(tobesorted):
@@ -36,45 +33,46 @@ def getfilelist():
   return list
 
 
-def getpathlist():
+def getpathlist(filename):
   """return a list of directories containing the data in ascending order, ordered by value of file names. The elements of the list are strings"""
   list = getfilelist() 
   for i in range(len(list)):
     list[i]=(path+'/'+list[i]+'/'+filename)
   return list
 
-def deletefstline(pathlist):
-  #The first line of U data files contains unreadable characters, so it need to be deleted. And new file is written in the same directory with a suffix of .new.csv
-  #Taking a list of full path as input, this function not only generate new files, but also return new list of path pointing to new files. 
-  print "\n\n////////////////////Called deletefstline().///////////////////////////\n\n"
-  newpathlist=[]
-  for path in pathlist:
-    #file = open(path,encoding = 'utf-8',errors='ignore')
-    #codecs.open() can be specified with how to handle errors
-    #In python3.4, built-in open() function is also able to do this
-    #but not in python2.7
-    file = codecs.open(path,encoding = 'utf-8',errors='ignore')
-    if file.closed:
-      print"failed to open the file."
-    lines = file.readlines()
-    file.close()
-    file = open (path+'.new.csv','w') #write to a new file
-    for line in lines:
-      if re.match(r'\D',line):
-    #any line started with non-number character is comment
-        #print "  Deleted the line:\n","    ",line,"  in:",path
-        continue 
-      #print(line)
-      file.write(line)
-    file.close()
-    newpathlist = newpathlist + [path+'.new.csv']
-  return newpathlist
+#def deletefstline(pathlist):
+#  #The first line of U data files contains unreadable characters, so it need to be deleted. And new file is written in the same directory with a suffix of .new.csv
+#  #Taking a list of full path as input, this function not only generate new files, but also return new list of path pointing to new files. 
+#  print "\n\n////////////////////Called deletefstline().///////////////////////////\n\n"
+#  newpathlist=[]
+#  for path in pathlist:
+#    #file = open(path,encoding = 'utf-8',errors='ignore')
+#    #codecs.open() can be specified with how to handle errors
+#    #In python3.4, built-in open() function is also able to do this
+#    #but not in python2.7
+#    file = codecs.open(path,encoding = 'utf-8',errors='ignore')
+#    if file.closed:
+#      print"failed to open the file."
+#    lines = file.readlines()
+#    file.close()
+#    file = open (path+'.new.csv','w') #write to a new file
+#    for line in lines:
+#      if re.match(r'\D',line):
+#    #any line started with non-number character is comment
+#        #print "  Deleted the line:\n","    ",line,"  in:",path
+#        continue 
+#      #print(line)
+#      file.write(line)
+#    file.close()
+#    newpathlist = newpathlist + [path+'.new.csv']
+#  return newpathlist
   
   
    
-def getNofPts(time):
+def getNofPts(time,filename):
   #This function returns the number of sampled points
   csv_tmp = codecs.open('./postProcessing/sets/'+time+'/'+filename,encoding = 'utf-8',errors='replace')
+  #print "filename in getNofPts(): ",filename
   if csv_tmp.closed:
     print"failed to open the file."
   lines = csv_tmp.readlines()
@@ -102,6 +100,8 @@ def main(argv,input_filename,input_path):
        elif opt in ("-p", "--ipath"):
           path = arg
           default_path = False
+
+    #if it did not get -i and -p from command line:
     if default_filename == True:
         filename = input_filename
     if default_path == True:
@@ -111,40 +111,49 @@ def main(argv,input_filename,input_path):
     print "name of input files:",filename
     print "input file path:",path
     filelist=getfilelist()#A list containing the name of time directories. E.g. ['0','0.05','0.1',...]
-    Nopts=getNofPts(filelist[0])#Find out how many points are sampled.
-    pathlist=getpathlist()#A list containing the full path of the file to be processed in each time directory. 
-    newpl=deletefstline(pathlist)#New:A list containing the full path of the file to be processed in each time directory. 
-    if not(os.access('./postProcessing/history',os.F_OK)):
+    print "Time file list: ",filelist
+    Nopts=getNofPts(filelist[0],filename)#Find out how many points are sampled.
+    pathlist=getpathlist(filename)#A list containing the full path of the file to be processed in each time directory. 
+    #print pathlist
+    #newpl=deletefstline(pathlist)#New:A list containing the full path of the file to be processed in each time directory. 
+    if not('history' in os.listdir('./postProcessing')):
       os.mkdir('./postProcessing/history')
-    else:
-      print"\n"
-      print"********************************************************************************"
-      print"Warning! The directory, './postProcessing/history', already exists!!\n"
-      print"********************************************************************************"
-      print"\n"
+    if not(filename in os.listdir('./postProcessing/history')):
+      os.mkdir('./postProcessing/history/'+filename)
+    print "All output will be output into: ./postProcessing/history/"+filename
+    #else:
+    #  print"\n"
+    #  print"********************************************************************************"
+    #  print"Warning! The directory, './postProcessing/history', already exists!!\n"
+    #  print"********************************************************************************"
+    #  print"\n"
 
 
 #Create a list containing new files to be written
-    newfile=[]
+    newfile=[]# a list of files to be written into
     for i in range(Nopts):
-      newfile.append(open('./postProcessing/history/'+filename+'.point_'+str(i)+'.csv','w'))
+      newfile.append(open('./postProcessing/history/'+filename+'/point_'+str(i)+'.csv','w'))
+    print 'No. of output files: ',len(newfile)
 
-    pos2=0
-    for path in newpl:
+    #for path in newpl:
+    for path in pathlist:#eg. ./postProcessing/sets/40/a1_U.csv
       file = open(path,'r')
       #print "Processing the following file:\n",path
       if (file.closed):
         print "failed to open the file!"
-      #print(file.name)
       lines = file.readlines() 
       flag = 0
       for line in lines:
-        time = filelist[newpl.index(path)]
-        line = time +','+line
-        newfile[flag].write(line)
-        flag += 1
+        if line.startswith(tuple('0123456789')): # if starts with number
+          time = filelist[pathlist.index(path)]
+          line = time +','+line
+          newfile[flag].write(line)
+          flag += 1
   
 
 #################################################################################################
 #main part
+#directory to process
+path="./postProcessing/sets"
+filename='a1_U.csv'
 main(sys.argv[1:],filename,path)
