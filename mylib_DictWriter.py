@@ -579,3 +579,86 @@ def write_myfoam_runCase(para,dir='./'):
     output_file.write('myfoam_getforcesHistory.py\n')
     output_file.write('myfoam_getAveragedForce.py\n')
 
+#--------------------------------------------------------------------#
+#                 write_boundaryData_scalar                          #
+#--------------------------------------------------------------------#
+#write a scalar-type data into boundaryData/inlet_patch_name/t
+def write_boundaryData_scalar(scalar,t,name,para,dir='./constant'):
+    #para is a python dictionary containing the parameters
+    #scalar is a numpy array, containing value to be written
+    #for each cell
+    import os
+    if not('boundaryData' in os.listdir(dir)):
+        os.mkdir(dir+'/boundaryData')
+    patch_dir = dir+'/boundaryData/'+para['inlet_patch_name']
+    if not(para['inlet_patch_name'] in os.listdir(dir+'/boundaryData')):
+        os.mkdir(patch_dir)
+    if not( str(t) in os.listdir(patch_dir)):
+        os.mkdir(patch_dir+'/'+str(t))
+    dict_file = open(patch_dir+'/'+str(t)+'/'+name, 'w')
+    log_file = open(patch_dir+'/write_boundaryData_on_'+para['inlet_patch_name']+'.log', 'a')
+    log_file.write('Writing '+name+' at t='+str(t)+'\n')
+    dict_file.write('/*--------------------------------*- C++ -*----------------------------------*/\n')
+    dict_file.write('FoamFile\n')
+    dict_file.write('{\n')
+    dict_file.write('  version 2.0;\n')
+    dict_file.write('  format  ascii;\n')
+    dict_file.write('  class   scalarAverageField;\n')
+    dict_file.write('  object  values;\n')
+    dict_file.write('}\n')
+
+    dict_file.write('// Average\n')
+    dict_file.write('0.0\n')
+    dict_file.write('// Data on points\n')
+    dict_file.write(str(scalar.size)+'\n')
+    dict_file.write('(\n')
+    for i in range(scalar.size):
+        dict_file.write(str(scalar[i])+'\n')
+    dict_file.write(')\n')
+
+#--------------------------------------------------------------------#
+#                    write_boundaryData_vector                       #
+#--------------------------------------------------------------------#
+#write a vector-type data into boundaryData/inlet_patch_name/t
+def write_boundaryData_vector(vector,t,name,para,dir='./constant',foam_class='vectorAverageField',foam_object='values'):
+    #para is a python dictionary containing the parameters
+    #vector is a numpy array, containing value of vectors to be written 
+    #for each cell
+    import os
+    if not('boundaryData' in os.listdir(dir)):
+        os.mkdir(dir+'/boundaryData')
+    patch_dir = dir+'/boundaryData/'+para['inlet_patch_name']
+    if not(para['inlet_patch_name'] in os.listdir(dir+'/boundaryData')):
+        os.mkdir(patch_dir)
+    if len(str(t)) > 0:#write into patch_dir/time/
+        if not( str(t) in os.listdir(patch_dir)):
+            os.mkdir(patch_dir+'/'+str(t))
+        dict_file = open(patch_dir+'/'+str(t)+'/'+name, 'w')
+        write_average=True
+    else:#len(t)=0, write into patch_dir/
+        write_average=False
+        dict_file = open(patch_dir+'/'+name, 'w')
+
+    log_file = open(patch_dir+'/write_boundaryData_on_'+para['inlet_patch_name']+'.log', 'a')
+    log_file.write('Writing '+name+' at t='+str(t)+'\n')
+    dict_file.write('/*--------------------------------*- C++ -*----------------------------------*/\n')
+    dict_file.write('FoamFile\n')
+    dict_file.write('{\n')
+    dict_file.write('  version 2.0;\n')
+    dict_file.write('  format  ascii;\n')
+    dict_file.write('  class   '+foam_class+';\n')
+    dict_file.write('  object  '+foam_object+';\n')
+    dict_file.write('}\n')
+
+    if write_average:
+        dict_file.write('// Average\n')
+        dict_file.write('(0 0 0)\n')
+    dict_file.write('// Data on points\n')
+    nrow=vector.shape[0]
+    dict_file.write(str(nrow)+'\n')
+    dict_file.write('(\n')
+    for i in range(nrow):
+        #todo change output format of the float numbers
+        line = '( '+str(vector[i,:]).lstrip('[').rstrip(']') +' )'
+        dict_file.write(line+'\n')
+    dict_file.write(')\n')
