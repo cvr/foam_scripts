@@ -12,24 +12,24 @@ from mylib_DictWriter import write_boundaryData_scalar,write_boundaryData_vector
 #general parameters
 para={}
 para['startTime']=0#start time
-para['endTime']=1#end time
-para['deltaT']=0.1#time step in ./constant/boundaryData/inlet_patch_name
+para['endTime']=2#end time
+para['deltaT']=0.02#time step in ./constant/boundaryData/inlet_patch_name
 para['x_inlet']=0#x coordinates of inlet plane
 para['ymin_inlet']=-0.5#min y coordinates of inlet plane
 para['ymax_inlet']=0.5#max y coordinates of inlet plane
 para['zmin_inlet']=0#min z coordinates of inlet plane
 para['zmax_inlet']=2#max z coordinates of inlet plane
-para['nz']=50#must be integer
-para['g']=9.8#gravity acceleration
+para['nz']=200#must be integer
+para['g']=9.81#gravity acceleration
 para['log_path']='./'#path to save the log file for this code
 para['inlet_patch_name'] = 'inlet'#./constant/boundaryData/inlet_patch_name
 
 #parameters for wave
 wave={}
 wave['depth']=1#depth of water, h
-wave['waveheight']=0.5#wave height, H
-wave['omega']=2*pi#wave circular frequency, omega
-wave['rho']=998.2#density of water
+wave['waveheight']=0.1#wave height, H
+wave['omega']=pi#wave circular frequency, omega
+wave['rho']=998.8#density of water
 #wave['k']=0.5 #wave number is not independent of omega thus it should not be defined here
 
 
@@ -83,10 +83,21 @@ for i,t in enumerate(t_list):
     #if z coordinates in a row of points is smaller than eta, alpha_water should be 1 there and 0 otherwise.
     log_file.write( '\nt= '+str(t)+'\n')
     alpha_water=0.5*(np.sign(depth_list[i]-points[:,2])+1)#a list containing value of alpha.water in each cell on inlet patch
+    n1=0
+    for n in range(alpha_water.size): #compute how many cells are with value alpha.water=1
+        if alpha_water[n] > 0:
+            n1=n1+1
+            continue
+        else:
+            break
     log_file.write( 'alpha.water in each cell: \n'+str(alpha_water)+'\n')
     write_boundaryData_scalar(alpha_water,t,'alpha.water',para)
     u=0.5*wave['waveheight']*wave['omega']*np.cosh(wave['k']*(points[:,2]))/np.sinh(wave['k']*wave['depth'])*np.cos(-wave['omega']*t+phase_shifted)
+    u=u*alpha_water#u in all cells above free surface are set to zero
+    u[n1:]=u[n1-1]#u in all cells above free surface are set to equal to velocity just below the free surface 
     w=0.5*wave['waveheight']*wave['omega']*np.sinh(wave['k']*(points[:,2]))/np.sinh(wave['k']*wave['depth'])*np.sin(-wave['omega']*t+phase_shifted)
+    w=w*alpha_water#w in all cells above free surface are set to zero
+    w[n1:]=w[n1-1]#w in all cells above free surface are set to equal to velocity just below the free surface 
     v=points[:,2]*0#v is all zero
     log_file.write( 'u: \n'+str(u)+'\n')
     log_file.write( 'v: \n'+str(v)+'\n')
@@ -96,10 +107,11 @@ for i,t in enumerate(t_list):
     log_file.write( 'velocity:\n'+str(velocity)+'\n')
     write_boundaryData_vector(velocity,t,'U',para)
     #p=wave['rho']*para['g']*(-(points[:,2]-wave['depth'])+wave['waveheight']*0.5*np.cosh(wave['k']*(points[:,2]))/np.cosh(wave['k']*wave['depth'])*np.cos(-wave['omega']*t+phase_shifted))
-    #p_rgh=wave['rho']*para['g']*(wave['waveheight']*0.5*np.cosh(wave['k']*(points[:,2]))/np.cosh(wave['k']*wave['depth'])*np.cos(-wave['omega']*t+phase_shifted))
+    p_rgh=wave['rho']*para['g']*(wave['waveheight']*0.5*np.cosh(wave['k']*(points[:,2]))/np.cosh(wave['k']*wave['depth'])*np.cos(-wave['omega']*t+phase_shifted)) + wave['rho']*para['g']*points[:,2]
+    p_rgh=p_rgh*alpha_water#p in all cells above free surface are set to zero
     #log_file.write( 'p:\n'+str(p)+'\n')
-    #log_file.write( 'p_rgh:\n'+str(p_rgh)+'\n')
-    #write_boundaryData_scalar(p_rgh,t,'p_rgh',para)
+    log_file.write( 'p_rgh:\n'+str(p_rgh)+'\n')
+    write_boundaryData_scalar(p_rgh,t,'p_rgh',para)
 
 
 
