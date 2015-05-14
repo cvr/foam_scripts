@@ -12,7 +12,7 @@ from mylib_DictWriter import write_boundaryData_scalar,write_boundaryData_vector
 #general parameters
 para={}
 para['startTime']=0#start time
-para['endTime']=2#end time
+para['endTime']=50#end time
 para['deltaT']=0.02#time step in ./constant/boundaryData/inlet_patch_name
 para['x_inlet']=0#x coordinates of inlet plane
 para['ymin_inlet']=-0.5#min y coordinates of inlet plane
@@ -106,12 +106,23 @@ for i,t in enumerate(t_list):
     velocity=np.transpose(velocity)
     log_file.write( 'velocity:\n'+str(velocity)+'\n')
     write_boundaryData_vector(velocity,t,'U',para)
-    #p=wave['rho']*para['g']*(-(points[:,2]-wave['depth'])+wave['waveheight']*0.5*np.cosh(wave['k']*(points[:,2]))/np.cosh(wave['k']*wave['depth'])*np.cos(-wave['omega']*t+phase_shifted))
-    p_rgh=wave['rho']*para['g']*(wave['waveheight']*0.5*np.cosh(wave['k']*(points[:,2]))/np.cosh(wave['k']*wave['depth'])*np.cos(-wave['omega']*t+phase_shifted)) + wave['rho']*para['g']*points[:,2]
+    #pressure
+    p=wave['rho']*para['g']*(-(points[:,2]-wave['depth'])+wave['waveheight']*0.5*np.cosh(wave['k']*(points[:,2]))/np.cosh(wave['k']*wave['depth'])*np.cos(-wave['omega']*t+phase_shifted))
+    p=p*alpha_water
+
+    p_rgh=wave['rho']*para['g']*(wave['waveheight']*0.5*np.cosh(wave['k']*(points[:,2]))/np.cosh(wave['k']*wave['depth'])*np.cos(-wave['omega']*t+phase_shifted)) + wave['rho']*para['g']*points[:,2]#this is actually p+rgh instead of p-rgh
     p_rgh=p_rgh*alpha_water#p in all cells above free surface are set to zero
+
+    #fixed negative p_rgh
+    #for n in range(p_rgh.size):
+    #    if p_rgh[n] < 0:
+    #        p_rgh[n] = 0
+
+    #p=p*alpha_water
     #log_file.write( 'p:\n'+str(p)+'\n')
-    log_file.write( 'p_rgh:\n'+str(p_rgh)+'\n')
-    write_boundaryData_scalar(p_rgh,t,'p_rgh',para)
+    #log_file.write( 'p_rgh:\n'+str(p_rgh)+'\n')
+    #write_boundaryData_scalar(p_rgh,t,'p_rgh',para)
+    #write_boundaryData_scalar(p,t,'p',para)
 
 
 
