@@ -6,6 +6,7 @@ import os
 import csv
 import sys,getopt
 #directory to process
+#data file should be obained with sample utility. (interpolation scheme should be cell)
 path="./postProcessing/sets"
 #This is the filename in each time directories.
 filename='origin_alpha.water.csv'
