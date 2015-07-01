@@ -10,6 +10,8 @@ import sys,getopt
 path="./postProcessing/sets"
 #This is the filename in each time directories.
 filename='origin_alpha.water.csv'
+#sweeping direction when searching for free surface. 1: from top to bottom; 2: from bottom to top
+sd = 1
 
 def mysort(tobesorted):
   'This function sort a list of floating numbers in ascending order.'
@@ -69,6 +71,15 @@ def main(argv,input_filename,input_path):
 
     print "name of input files:",filename
     print "input file path:",path
+    print "sweeping direction:"
+    if sd == 2:
+        print "    from bottom to top"
+    elif sd == 1:
+        print "    from top to bottom"
+    else: 
+        print "incorrect setup for sweeping direction"
+        sys.exit()
+
 
     results=[['time','waveheight']]
     csvfile = open('./postProcessing/history_'+filename,'w')
@@ -88,33 +99,67 @@ def main(argv,input_filename,input_path):
           continue
       #print(file.name)
       reader=csv.reader(file) 
-      first_loop = True
-      for row in reader:
-        if row[0]=='distance':
-          continue
+      if sd ==2:#sweep from bottom to top
+          first_loop = True
+          for row in reader:
+            if row[0]=='distance':
+              continue
 
-        if first_loop == True:#In first loop, do not interpolate
-          dist1=float(row[0])
-          alpha1=float(row[1])
-          first_loop = False
-          if alpha1<0.5:#alpha1 in first cell is less than 0.5 => water depth = 0
-            writer.writerow([filelist[flag],dist1]) 
-            break
-          continue
+            if first_loop == True:#In first loop, do not interpolate
+              dist1=float(row[0])
+              alpha1=float(row[1])
+              first_loop = False
+              if alpha1<0.5:#alpha1 in first cell is less than 0.5 => water depth = 0 &
+                #(in fact, output is distance listed in first row)
+                writer.writerow([filelist[flag],dist1]) 
+                break
+              continue
 
-        dist2=float(row[0])
-        alpha2=float(row[1])
-        #Define the water surface as where alpha1==0.5 and get the z coordinate value of that point by interpolation.
-        if ((alpha1-0.5)*(alpha2-0.5))<0:
-          waveheight=(dist1-dist2)/(alpha1-alpha2)*0.5+(alpha1*dist2-alpha2*dist1)/(alpha1-alpha2)
-          writer.writerow([filelist[flag],waveheight]) 
-          #results=results+[[filelist[flag],row[0]]]    
-          break
-        #These two variables store current line for next iteration.
-        dist1=dist2
-        alpha1=alpha2
+            dist2=float(row[0])
+            alpha2=float(row[1])
+            #Define the water surface as where alpha1==0.5 and get the z coordinate value of that point by interpolation.
+            if ((alpha1-0.5)*(alpha2-0.5))<0:
+              waveheight=(dist1-dist2)/(alpha1-alpha2)*0.5+(alpha1*dist2-alpha2*dist1)/(alpha1-alpha2)
+              writer.writerow([filelist[flag],waveheight]) 
+              #results=results+[[filelist[flag],row[0]]]    
+              break
+            #These two variables store current line for next iteration.
+            dist1=dist2
+            alpha1=alpha2
 
-      flag+=1
+          flag+=1
+      elif sd == 1:#sweep from top to bottom
+          first_loop = True
+          for row in reversed(list(reader)):
+              if row[0]=='distance': #reached first row. Water depth should be 0
+                  writer.writerow([filelist[flag],dist1]) 
+                  break
+              if first_loop == True:#In first loop, do not interpolate
+                  dist1=float(row[0])
+                  alpha1=float(row[1])
+                  first_loop = False
+                  if alpha1>0.5:#alpha1 in first cell is larger than 0.5 => water depth = height of domain &
+                      #(in fact, output is distance listed in last row)
+                      writer.writerow([filelist[flag],dist1]) 
+                      break
+                  continue
+
+              dist2=float(row[0])
+              alpha2=float(row[1])
+              #Define the water surface as where alpha1==0.5 and get the z coordinate value of that point by interpolation.
+              if ((alpha1-0.5)*(alpha2-0.5))<0:
+                waveheight=(dist1-dist2)/(alpha1-alpha2)*0.5+(alpha1*dist2-alpha2*dist1)/(alpha1-alpha2)
+                writer.writerow([filelist[flag],waveheight]) 
+                #results=results+[[filelist[flag],row[0]]]    
+                break
+              #These two variables store current line for next iteration.
+              dist1=dist2
+              alpha1=alpha2
+
+          flag+=1
+      else: 
+          print "incorrect setup for sweeping direction"
+          sys.exit()
 
 #main part
 main(sys.argv[1:],filename,path)
