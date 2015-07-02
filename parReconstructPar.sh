@@ -106,11 +106,8 @@ if [ -n "$TLOW" ]
         exit 1
     fi
 
-    #echo "inside"
-    #echo "$TLOW"
-    #echo "$TMIN"
   
-    set -x
+    #set -x
     # Then set Min-Time
     #make sure NSTART is assigned once even if the loop below is never executed for once
     NSTART=$(($NLOW-1))
@@ -119,9 +116,7 @@ if [ -n "$TLOW" ]
       NSTART=$(($NLOW))
       let NLOW=NLOW+1
     done
-    set +x
-    #echo "nstart:"
-    #echo "$NSTART"
+    #set +x
 
     # And then set Max-Time
     until [ $(echo "$TMAX <= $THIGH" | bc) == 1 ]; do
@@ -139,8 +134,6 @@ if [ -n "$TLOW" ]
 fi
 
 echo "reconstructing $NSTEPS time directories"
-#echo "$TLOW"
-#echo "$TMIN"
 
 NCHUNK=$(($NSTEPS/$NJOBS))
 NREST=$(($NSTEPS%$NJOBS))
@@ -174,8 +167,6 @@ do
   fi
 
   
-  #echo $NSTOP
-  #echo $NSTART
   if [ $NSTOP -ge $NSTART ]
     then  
     echo "Starting Job $i - reconstructing time = $TSTART through $TSTOP"
