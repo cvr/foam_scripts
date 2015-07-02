@@ -1,6 +1,7 @@
 #!/bin/bash
 echo "
       K. Wardle 6/22/09, modified by H. Stadler Dec. 2013, minor fix Will Bateman Sep 2014.
+      Modified by Xinsheng Qin July 2015.
       bash script to run reconstructPar in pseudo-parallel mode
       by breaking time directories into multiple ranges
      "
@@ -10,7 +11,11 @@ USAGE="
         -f (fields) is optional, fields given in the form T,U,p; option is passed on to reconstructPar
   -t (times) is optional, times given in the form tstart,tstop
         -o (output) is optional 
+
+    Example:
+    ./parReconstructPar.sh -n 4 -t 20,25 
 "
+
 
 #TODO: add flag to trigger deletion of original processorX directories after successful reconstruction
 # At first check whether any flag is set at all, if not exit with error message
@@ -70,7 +75,8 @@ NINITAL=$(ls -d [0-9]*/ | wc -l) ##count time directories in case root dir, this
 
 P=p
 #find min and max time
-TMIN=$(ls processor0 -1v | sed '/constant/d' | sort -g | sed -n 2$P) # modified to omit constant and first time directory
+#if you want to omit first time directory, change 1$P to 2$P
+TMIN=$(ls processor0 -1v | sed '/constant/d' | sort -g | sed -n 1$P) # modified to omit constant  directory
 #TMIN=`ls processor0 | sort -nr | tail -1`
 TMAX=$(ls processor0 -1v | sed '/constant/d' | sort -gr | head -1) # modified to omit constant directory
 #TMAX=`ls processor0 | sort -nr | head -1`
@@ -80,6 +86,7 @@ if [ -n "$TLOW" ]
   then
     TMIN=$(ls processor0 -1v | sed '/constant/d' | sort -g | sed -n 1$P) # now allow the first directory
     NLOW=2
+    #NLOW=1
     NHIGH=$NSTEPS
     # At first check whether the times are given are within the times in the directory
     if [ $(echo "$TLOW > $TMAX" | bc) == 1 ]; then
@@ -98,13 +105,23 @@ if [ -n "$TLOW" ]
         echo "$USAGE"
         exit 1
     fi
+
+    #echo "inside"
+    #echo "$TLOW"
+    #echo "$TMIN"
   
+    set -x
     # Then set Min-Time
-    until [ $(echo "$TMIN >= $TLOW" | bc) == 1 ]; do
+    #make sure NSTART is assigned once even if the loop below is never executed for once
+    NSTART=$(($NLOW-1))
+    until [[ $(echo "$TMIN >= $TLOW" | bc) == 1 ]]; do
       TMIN=$(ls processor0 -1v | sed -n $NLOW$P)
       NSTART=$(($NLOW))
       let NLOW=NLOW+1
     done
+    set +x
+    #echo "nstart:"
+    #echo "$NSTART"
 
     # And then set Max-Time
     until [ $(echo "$TMAX <= $THIGH" | bc) == 1 ]; do
@@ -117,11 +134,13 @@ if [ -n "$TLOW" ]
 
   else
 
-    NSTART=2
+    NSTART=1
 
 fi
 
 echo "reconstructing $NSTEPS time directories"
+#echo "$TLOW"
+#echo "$TMIN"
 
 NCHUNK=$(($NSTEPS/$NJOBS))
 NREST=$(($NSTEPS%$NJOBS))
@@ -129,6 +148,11 @@ TSTART=$TMIN
 
 echo "making temp dir"
 TEMPDIR="temp.parReconstructPar"
+if [[ -d $TEMPDIR ]]
+then 
+    echo "removing old temp dir"
+    rm $TEMPDIR -r
+fi
 mkdir $TEMPDIR
 
 PIDS=""
@@ -149,6 +173,9 @@ do
   TSTOP=$TMAX
   fi
 
+  
+  #echo $NSTOP
+  #echo $NSTART
   if [ $NSTOP -ge $NSTART ]
     then  
     echo "Starting Job $i - reconstructing time = $TSTART through $TSTOP"
