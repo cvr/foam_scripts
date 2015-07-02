@@ -1,4 +1,5 @@
 #!/bin/bash
+#This scripts can be submitted to backfill queues to run a case from preprocessing to postprocessing.
 
 #PBS -N run_testShell
 #PBS -l walltime=3:00:00:00,nodes=1:ppn=16
@@ -33,6 +34,7 @@ then
 fi
 
 #if final time file does not exist in processor*, we should run solver
+#TODO it's recommended that the [] pair should be changed to [[]]
 if [ ! -d processor0/$finalTime ]
 then
     echo "Run interFoam."
