@@ -10,8 +10,11 @@ import sys,getopt
 path="./postProcessing/sets"
 #This is the filename in each time directories.
 filename='origin_alpha.water.csv'
-#sweeping direction when searching for free surface. 1: from top to bottom; 2: from bottom to top
-sd = 1
+#algorithms to get wave height:
+#1: sweep from top to bottom to get free surface position, which is defined as wave height; 
+#2: sweep from bottom to top to get free surface; 
+#3: integrate in upright direction to get wave height
+method = 3
 
 def mysort(tobesorted):
   'This function sort a list of floating numbers in ascending order.'
@@ -71,18 +74,22 @@ def main(argv,input_filename,input_path):
 
     print "name of input files:",filename
     print "input file path:",path
-    print "sweeping direction:"
-    if sd == 2:
-        print "    from bottom to top"
-    elif sd == 1:
-        print "    from top to bottom"
+    if method == 2:
+        print "sweep from bottom to top"
+        m_name = 'bottomtotop'
+    elif method == 1:
+        print "sweep from top to bottom"
+        m_name = 'toptobottom'
+    elif method == 3:
+        print "integrate to get wave height"
+        m_name = 'integrate'
     else: 
         print "incorrect setup for sweeping direction"
         sys.exit()
 
 
     results=[['time','waveheight']]
-    csvfile = open('./postProcessing/history_'+filename,'w')
+    csvfile = open('./postProcessing/history_'+m_name+'_'+filename,'w')
     writer=csv.writer(csvfile,delimiter=',')
     filelist=getfilelist()
     pathlist=getpathlist(filename)    
@@ -99,7 +106,7 @@ def main(argv,input_filename,input_path):
           continue
       #print(file.name)
       reader=csv.reader(file) 
-      if sd ==2:#sweep from bottom to top
+      if method ==2:#sweep from bottom to top
           first_loop = True
           for row in reader:
             if row[0]=='distance':
@@ -128,7 +135,7 @@ def main(argv,input_filename,input_path):
             alpha1=alpha2
 
           flag+=1
-      elif sd == 1:#sweep from top to bottom
+      elif method == 1:#sweep from top to bottom
           first_loop = True
           for row in reversed(list(reader)):
               if row[0]=='distance': #reached first row. Water depth should be 0
@@ -156,6 +163,31 @@ def main(argv,input_filename,input_path):
               dist1=dist2
               alpha1=alpha2
 
+          flag+=1
+      elif method == 3:#integrate in z direction to get wave height
+          first_loop = True
+          h = 0
+          for row in reader:
+            if row[0]=='distance':
+              continue
+
+            if first_loop == True:#In first loop, do not interpolate
+              dist1=float(row[0])
+              alpha1=float(row[1])
+              h = h + dist1
+              first_loop = False
+              #if alpha1<0.5:#alpha1 in first cell is less than 0.5 => water depth = 0 &
+              #  #(in fact, output is distance listed in first row)
+              #  writer.writerow([filelist[flag],dist1]) 
+              #  break
+              continue
+
+            dist2=float(row[0])
+            alpha2=float(row[1])
+            h = h + (dist2-dist1)*alpha1
+            dist1=dist2
+            alpha1=alpha2
+          writer.writerow([filelist[flag],h]) 
           flag+=1
       else: 
           print "incorrect setup for sweeping direction"
