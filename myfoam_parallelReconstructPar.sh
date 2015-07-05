@@ -10,14 +10,13 @@ USAGE="
       USAGE: $0 -n <NP> -f fields -o <OUTPUTFILE>
         -f (fields) is optional, fields given in the form T,U,p; option is passed on to reconstructPar
   -t (times) is optional, times given in the form tstart,tstop
-        -o (output) is optional 
+        -o (output) is optional (currently disable)
 
     Example:
     ./parReconstructPar.sh -n 4 -t 20,25 
 "
 
 
-#TODO: add flag to trigger deletion of original processorX directories after successful reconstruction
 # At first check whether any flag is set at all, if not exit with error message
 if [ $# == 0 ]; then
     echo "$USAGE"
@@ -71,22 +70,21 @@ echo "running $APPNAME in pseudo-parallel mode on $NJOBS processors"
 
 #count the number of time directories
 NSTEPS=$(($(ls -d processor0/[0-9]*/ | wc -l)-1))
-NINITAL=$(ls -d [0-9]*/ | wc -l) ##count time directories in case root dir, this will include 0
+NINITAL=$(ls | sed '/^[0-9]*[\.]*[0-9]*$/!d' | wc -l) ##count time directories in case root dir, this will include 0
+#NINITAL=$(ls -d [0-9]*/ | wc -l) ##count time directories in case root dir, this will include 0
 
 P=p
 #find min and max time
-#if you want to omit first time directory, change 1$P to 2$P
-TMIN=$(ls processor0 -1v | sed '/constant/d' | sort -g | sed -n 1$P) # modified to omit constant  directory
-#TMIN=`ls processor0 | sort -nr | tail -1`
+TMIN=$(ls processor0 -1v | sed '/constant/d' | sort -g | sed -n 2$P) # modified to omit constant  directory
 TMAX=$(ls processor0 -1v | sed '/constant/d' | sort -gr | head -1) # modified to omit constant directory
-#TMAX=`ls processor0 | sort -nr | head -1`
 
-#Adjust min and max time according to the parameters passed over
+################################################################################
+####//Adjust min and max time according to specified -t options passed over//###
+################################################################################
 if [ -n "$TLOW" ]
   then
     TMIN=$(ls processor0 -1v | sed '/constant/d' | sort -g | sed -n 1$P) # now allow the first directory
     NLOW=2
-    #NLOW=1
     NHIGH=$NSTEPS
     # At first check whether the times are given are within the times in the directory
     if [ $(echo "$TLOW > $TMAX" | bc) == 1 ]; then
@@ -108,11 +106,13 @@ if [ -n "$TLOW" ]
 
   
     #set -x
+    #trap read debug
     # Then set Min-Time
+    #NSTART is index of beginning time directory processed by a certain processor 
     #make sure NSTART is assigned once even if the loop below is never executed for once
     NSTART=$(($NLOW-1))
     until [[ $(echo "$TMIN >= $TLOW" | bc) == 1 ]]; do
-      TMIN=$(ls processor0 -1v | sed -n $NLOW$P)
+      TMIN=$(ls processor0 -1v | sed '/constant/d' | sed -n $NLOW$P)
       NSTART=$(($NLOW))
       let NLOW=NLOW+1
     done
@@ -120,18 +120,26 @@ if [ -n "$TLOW" ]
 
     # And then set Max-Time
     until [ $(echo "$TMAX <= $THIGH" | bc) == 1 ]; do
-      TMAX=$(ls processor0 -1v | sed -n $NHIGH$P)
+      TMAX=$(ls processor0 -1v | sed '/constant/d' | sed -n $NHIGH$P)
       let NHIGH=NHIGH-1
     done
 
+    #at this stage, 
+    #NLOW is index of the time directory after TMIN,
+    #NHIGH is index of the time directory before TMAX, 
+    #NSTART is NLOW-1
+    #e.g. time directories are 0,1,2,3,4,4.5,6, TMIN = 2, TMAX =4.5 
+    #then NLOW = 4, NHIGH  = 5. NSTART = 3
+    #NHIGH and NLOW are ONLY used to compute NSTEPS in this block
     # Finally adjust the number of directories to be reconstructed
     NSTEPS=$(($NHIGH-$NLOW+3))
 
-  else
+  else #if -t option is not specified
 
-    NSTART=1
+      NSTART=2 #skip first time directory 
 
 fi
+#The block above output ONLY: NSTART and NSTEPS
 
 echo "reconstructing $NSTEPS time directories"
 
@@ -139,15 +147,18 @@ NCHUNK=$(($NSTEPS/$NJOBS))
 NREST=$(($NSTEPS%$NJOBS))
 TSTART=$TMIN
 
-echo "making temp dir"
-TEMPDIR="temp.parReconstructPar"
-if [[ -d $TEMPDIR ]]
+LOGDIR="log.parReconstructPar"
+if [[ -d $LOGDIR ]]
 then 
-    echo "removing old temp dir"
-    rm $TEMPDIR -r
+    echo "removing old log dir"
+    rm $LOGDIR -r
 fi
-mkdir $TEMPDIR
+echo "making log dir"
+mkdir $LOGDIR
 
+################################################################################
+#############################//Start assigning jobs//###########################
+################################################################################
 PIDS=""
 for i in $(seq $NJOBS)
 do
@@ -158,9 +169,10 @@ do
     else
       NSTOP=$(($NSTART+$NCHUNK-1))
   fi
-  TSTOP=$(ls processor0 -1v | sed -n $NSTOP$P)
+  TSTOP=$(ls processor0 -1v | sed '/constant/d' | sed -n $NSTOP$P)
 
 
+  #TODO don't really need this?
   if [ $i == $NJOBS ] 
   then
   TSTOP=$TMAX
@@ -172,27 +184,30 @@ do
     echo "Starting Job $i - reconstructing time = $TSTART through $TSTOP"
     if [ -n "$FIELDS" ]
       then
-        $($APPNAME -fields "($FIELDS)" -time $TSTART:$TSTOP > $TEMPDIR/output-$TSTOP &)
-  echo "Job started with PID $(pgrep -n -x $APPNAME)"
-  PIDS="$PIDS $(pgrep -n -x $APPNAME)" # get the PID of the latest (-n) job exactly matching (-x) $APPNAME
+        $($APPNAME -fields "($FIELDS)" -time $TSTART:$TSTOP > $LOGDIR/output-$TSTART-$TSTOP &)
+        sleep 2
+        echo "Job started with PID $(pgrep -n -x $APPNAME)"
+        PIDS="$PIDS $(pgrep -n -x $APPNAME)" # get the PID of the latest (-n) job exactly matching (-x) $APPNAME
       else
-        $($APPNAME -time $TSTART:$TSTOP > $TEMPDIR/output-$TSTOP &)
+        $($APPNAME -time $TSTART:$TSTOP > $LOGDIR/output-$TSTART-$TSTOP &)
   echo "Job started with PID $(pgrep -n -x $APPNAME)"
   PIDS="$PIDS $(pgrep -n -x $APPNAME)"
     fi
    fi
 
   let NSTART=$NSTOP+1
-  TSTART=$(ls processor0 -1v | sed -n $NSTART$P)
+  TSTART=$(ls processor0 -1v | sed '/constant/d' | sed -n $NSTART$P)
 done
+echo "PIDS for all the process are: $PIDS"
 
 #sleep until jobs finish
-#if number of jobs > NJOBS, hold loop until job finishes
+#if number of running jobs > 0, hold loop until job finishes
 NMORE_OLD=$(echo 0)
 until [ $(ps -p $PIDS | wc -l) -eq 1 ]; # check for PIDS instead of $APPNAME because other instances might also be running 
   do 
     sleep 10
-    NNOW=$(ls -d [0-9]*/ | wc -l) ##count time directories in case root dir, this will include 0
+    NNOW=$(ls | sed '/^[0-9]*[\.]*[0-9]*$/!d' | wc -l) ##count time directories in case root dir, this will include 0
+    #NNOW=$(ls -d [0-9]*/ | wc -l) ##count time directories in case root dir, this will include 0
     NMORE=$(echo $NSTEPS-$NNOW+$NINITAL | bc) ##calculate number left to reconstruct and subtract 0 dir
     if [ $NMORE != $NMORE_OLD ]
       then
@@ -201,24 +216,24 @@ until [ $(ps -p $PIDS | wc -l) -eq 1 ]; # check for PIDS instead of $APPNAME bec
     NMORE_OLD=$NMORE
   done
 
-#combine and cleanup
-if [ -n "$OUTPUTFILE" ] 
-  then
-#check if output file already exists
-  if [ -e "$OUTPUTFILE" ] 
-  then
-    echo "output file $OUTPUTFILE exists, moving to $OUTPUTFILE.bak"
-    mv $OUTPUTFILE $OUTPUTFILE.bak
-  fi
-
-  echo "cleaning up temp files"
-  for i in $(ls $TEMPDIR)
-  do
-    cat $TEMPDIR/$i >> $OUTPUTFILE
-  done
-fi
-
-rm -rf $TEMPDIR
+##combine and cleanup
+#if [ -n "$OUTPUTFILE" ] 
+#  then
+##check if output file already exists
+#  if [ -e "$OUTPUTFILE" ] 
+#  then
+#    echo "output file $OUTPUTFILE exists, moving to $OUTPUTFILE.bak"
+#    mv $OUTPUTFILE $OUTPUTFILE.bak
+#  fi
+#
+#  echo "cleaning up temp files"
+#  for i in $(ls $LOGDIR)
+#  do
+#    cat $LOGDIR/$i >> $OUTPUTFILE
+#  done
+#fi
+#
+#rm -rf $LOGDIR
 
 echo "finished"
 
