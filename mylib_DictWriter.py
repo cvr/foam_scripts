@@ -1,23 +1,31 @@
 #!/usr/bin/python
 import sys
+import os
+import pdb
 
 #--------------------------------------------------------------------#
 #                        write_blockMeshDict                         #
 #--------------------------------------------------------------------#
 #def write_blockMeshDict(x_pts,y_pts,z_pts,nx,ny,nz,polyMeshDir = './constant/polyMesh'):
-def write_blockMeshDict(x_pts,y_pts,z_pts,x_size,y_size,z_size,polyMeshDir = './constant/polyMesh'):
+def write_blockMeshDict(x_pts,y_pts,z_pts,x_size,y_size,z_size,constDir = './constant'):
     #x_pts is a list specifying x coordinates of vertices along x axis
     #y_pts is a list specifying y coordinates of vertices along y axis
     #z_pts is a list specifying z coordinates of vertices along z axis
     #nx is a list specifying number of cells along each edge along x axis. Length of nx = Length of x_pts - 1.
     #ny is a list specifying number of cells along each edge along y axis. Length of ny = Length of y_pts - 1.
     #nz is a list specifying number of cells along each edge along z axis. Length of nz = Length of z_pts - 1.
-    import os.path
+    #import os.path
 
     n_xpts=len(x_pts) #number of vertices along x axis
     n_ypts=len(y_pts)
     n_zpts=len(z_pts)
     
+    
+
+    #pdb.set_trace()
+    polyMeshDir = constDir+'/polyMesh'
+    if not ('polyMesh' in os.listdir(constDir)):
+        os.mkdir(polyMeshDir)
     mesh_file = open(os.path.join(polyMeshDir, 'blockMeshDict'), 'w')
     log_file = open(os.path.join(polyMeshDir, 'write_blockMeshDict.log'), 'w')
     mesh_file.write('/*--------------------------------*- C++ -*----------------------------------*/\n')
