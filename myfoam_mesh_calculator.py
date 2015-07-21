@@ -1,6 +1,8 @@
 #!/usr/bin/python
 
-################################################################################
+#Please go to end of this file to modify input parameters!
+
+#DO NOT modify code below
 def get_n(delta1,deltan,length,debug=0):
     #given delta1 (size of 1st cell), deltan (size of last cell) and length of the domain
     #giving it a guess of n can accelerate the computation
@@ -148,11 +150,15 @@ def get_r_given_deltan(deltan,length,n,debug=0):
     return r
 
 ################################################################################
-#1.given length, delta_1 and delta_n
+# user input starts here
+#3 modes are available
+
+#mode 1
+#1.Input length, delta_1 and delta_n
 #length is length of the edge
 #delta_1 is size of first cell
 #delta_n is size of last cell
-#uncomment the lines below to compute
+#e.g. (uncomment and modifiy following 4 lines to use this mode)
 #length=6
 #delta_1=0.02
 #delta_n=0.1
@@ -160,10 +166,12 @@ def get_r_given_deltan(deltan,length,n,debug=0):
 
 
 ################################################################################
-#2.given length, delta_1 and n 
+#mode 2
+#2.Input length, delta_1 and n 
 #length is length of the edge
 #delta_1 is size of first cell
 #n is total number of cells along this edge
+#e.g. (uncomment and modifiy following 4 lines to use this mode)
 #length=100
 #delta_1=1
 #n=25
@@ -171,11 +179,16 @@ def get_r_given_deltan(deltan,length,n,debug=0):
 
 
 ################################################################################
-#3.given length, delta_n and n 
+#mode 3
+#3.Input length, delta_n and n 
 #length is length of the edge
 #delta_n is size of last cell
 #n is total number of cells along this edge
+#e.g. (uncomment and modifiy following 4 lines to use this mode)
 #length=6
 #delta_n=0.1
 #n=120
 #get_r_given_deltan(delta_n,length,n,debug = 2)
+
+#user input ends here
+################################################################################

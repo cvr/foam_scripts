@@ -19,6 +19,21 @@ def write_blockMeshDict(x_pts,y_pts,z_pts,x_size,y_size,z_size,constDir = './con
     n_xpts=len(x_pts) #number of vertices along x axis
     n_ypts=len(y_pts)
     n_zpts=len(z_pts)
+
+    #check input
+    for i in range(n_xpts-1):
+        if x_pts[i+1]<x_pts[i]:
+            print "Input error: ",str(x_pts[i+1])+" is smaller than "+str(x_pts[i]),". x_pts should be in ascending order"
+            sys.exit
+    for i in range(n_ypts-1):
+        if y_pts[i+1]<y_pts[i]:
+            print "Input error: ",str(y_pts[i+1])+" is smaller than "+str(y_pts[i]),". y_pts should be in ascending order"
+            sys.exit
+    for i in range(n_zpts-1):
+        if z_pts[i+1]<z_pts[i]:
+            print "Input error: ",str(z_pts[i+1])+" is smaller than "+str(z_pts[i]),". z_pts should be in ascending order"
+            print "Input error. z_pts should be in ascending order"
+            sys.exit
     
     
 
@@ -45,7 +60,8 @@ def write_blockMeshDict(x_pts,y_pts,z_pts,x_size,y_size,z_size,constDir = './con
         log_file.write('//y%d  %g \n'%(j,y_pts[j]))
     for k in range(n_zpts): 
         log_file.write('//z%d  %g \n'%(k,z_pts[k]))
-        log_file.write('\n')
+
+    log_file.write('\n')
 
 
 
@@ -256,6 +272,7 @@ def write_snappyHexMeshDict(para,systemDir = './system'):
     #para is a python dictionary containing the parameters
     #In current version para should contain at least these keys:
     #stl_name,patch_name,eMesh_name
+    #at this stage, only support single STL file
     import os
     dict_file = open(os.path.join(systemDir, 'snappyHexMeshDict'), 'w')
     log_file = open(os.path.join(systemDir, 'write_snappyHexMeshDict.log'), 'w')
@@ -670,3 +687,80 @@ def write_boundaryData_vector(vector,t,name,para,dir='./constant',foam_class='ve
         line = '( '+str(vector[i,:]).lstrip('[').rstrip(']') +' )'
         dict_file.write(line+'\n')
     dict_file.write(')\n')
+
+
+#--------------------------------------------------------------------#
+#                 write_snappyHexMeshDict_component                  #
+#--------------------------------------------------------------------#
+#This function write sub-dictionary in snappyHexMeshDict
+#Currently supported sug-dictionary: geometry, features, refinementSurfaces
+#Will search all STL files in constant/triSurface and use them
+def write_snappyHexMeshDict_component(para,systemDir = './system'):
+    #para is a python dictionary containing the parameters
+    #In current version para should contain at least these keys:
+    #subDictName: a list of name of sub-dictionaries to be written
+    import os
+    if 'subDictName' in para:
+        subDictName = para['subDictName']
+    else:
+        print 'must specify which sub-dictionary you want to build'
+        print "e.g. para['subDictName'] = ['geometry','features']"
+        sys.exit()
+
+    
+    if 'geometry' in subDictName:
+        print "writing 'geometry' into: ", systemDir
+        dict_file = open(os.path.join(systemDir, 'geometry'), 'w')
+        log_file = open(os.path.join(systemDir, 'write_geometry.log'), 'w')
+        log_file.write('Input dictionary contains these parameters:\n')
+        for (key,value) in para.items():
+            line=str(key)+': '+str(value)+'\n'
+            log_file.write(line)
+        dict_file.write('/*--------------------------------*- C++ -*----------------------------------*/\n')
+        for file in os.listdir('./constant/triSurface'):
+            if file.endswith('.stl'):
+                dict_file.write(file + '\n')
+                dict_file.write('{\n')
+                dict_file.write('    type triSurfaceMesh;\n')
+                dict_file.write('    name ' + file[:-4] + ';\n')
+                dict_file.write('}\n')
+
+    if 'features' in subDictName:
+        print "writing 'features' into: ", systemDir
+        dict_file = open(os.path.join(systemDir, 'features'), 'w')
+        log_file = open(os.path.join(systemDir, 'write_features.log'), 'w')
+        log_file.write('Input dictionary contains these parameters:\n')
+        for (key,value) in para.items():
+            line=str(key)+': '+str(value)+'\n'
+            log_file.write(line)
+        dict_file.write('/*--------------------------------*- C++ -*----------------------------------*/\n')
+        for file in os.listdir('./constant/triSurface'):
+            if file.endswith('.stl'):
+                dict_file.write('{\n')
+                dict_file.write('    file "' + file[:-4] + '.eMesh";\n')
+                dict_file.write('    level 2;\n')
+                dict_file.write('}\n')
+
+    if 'refinementSurfaces' in subDictName:
+        print "writing 'refinementSurfaces' into: ", systemDir
+        dict_file = open(os.path.join(systemDir, 'refinementSurfaces'), 'w')
+        log_file = open(os.path.join(systemDir, 'write_refinementSurfaces.log'), 'w')
+        log_file.write('Input dictionary contains these parameters:\n')
+        for (key,value) in para.items():
+            line=str(key)+': '+str(value)+'\n'
+            log_file.write(line)
+        dict_file.write('/*--------------------------------*- C++ -*----------------------------------*/\n')
+        for file in os.listdir('./constant/triSurface'):
+            if file.endswith('.stl'):
+                dict_file.write(file[:-4] + '\n')
+                dict_file.write('{\n')
+                dict_file.write('    level (1 2);\n')
+                dict_file.write('    patchInfo\n')
+                dict_file.write('    {\n')
+                dict_file.write('        type wall;\n')
+                dict_file.write('        inGroups (house);\n') 
+                dict_file.write('    }\n')
+                dict_file.write('}\n')
+        
+
+
