@@ -430,10 +430,11 @@ def write_snappyHexMeshDict(para,systemDir = './system'):
 #--------------------------------------------------------------------#
 #                  write_surfaceFeatureExtractDict                   #
 #--------------------------------------------------------------------#
-def write_surfaceFeatureExtractDict(para,systemDir='./system'):
+def write_surfaceFeatureExtractDict(para={},systemDir='./system'):
     #para is a python dictionary containing the parameters
-    #para should at least contain these keys:
-    #stl_name
+    #para should at least contain these keys: none
+    #if stl_name is not specified in para, it will use all STL files in
+    #constant/triSurface
     import os
     dict_file = open(os.path.join(systemDir, 'surfaceFeatureExtractDict'), 'w')
     log_file = open(os.path.join(systemDir, 'write_surfaceFeatureExtractDict.log'), 'w')
@@ -450,23 +451,27 @@ def write_surfaceFeatureExtractDict(para,systemDir='./system'):
     dict_file.write('  object  surfaceFeatureExtractDict;\n')
     dict_file.write('}\n')
     if 'stl_name' in para:
-        dict_file.write(para['stl_name']+'\n')
+        stl_files = [para['stl_name']]
     else:
-        print 'must specify name of stl file in para'
-        sys.exit()
-    dict_file.write('{\n')
-    dict_file.write('    extractionMethod    extractFromSurface;\n')
-    dict_file.write('    extractFromSurfaceCoeffs\n')
-    dict_file.write('    {\n')
-    dict_file.write('        includedAngle   150;\n')
-    dict_file.write('    }\n')
-    dict_file.write('    subsetFeatures\n')
-    dict_file.write('    {\n')
-    dict_file.write('        nonManifoldEdges       no;\n')
-    dict_file.write('        openEdges       yes;\n')
-    dict_file.write('    }\n')
-    dict_file.write('    writeObj                yes;\n')
-    dict_file.write('}\n')
+        print "using all STL files in constant/triSurface"
+        stl_files = os.listdir('./constant/triSurface')
+
+    for item in stl_files:
+        if item.endswith('.stl'):
+            dict_file.write(item + '\n')
+            dict_file.write('{\n')
+            dict_file.write('    extractionMethod    extractFromSurface;\n')
+            dict_file.write('    extractFromSurfaceCoeffs\n')
+            dict_file.write('    {\n')
+            dict_file.write('        includedAngle   150;\n')
+            dict_file.write('    }\n')
+            dict_file.write('    subsetFeatures\n')
+            dict_file.write('    {\n')
+            dict_file.write('        nonManifoldEdges       no;\n')
+            dict_file.write('        openEdges       yes;\n')
+            dict_file.write('    }\n')
+            dict_file.write('    writeObj                yes;\n')
+            dict_file.write('}\n')
 
 
 #--------------------------------------------------------------------#
