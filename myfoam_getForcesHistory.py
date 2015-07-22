@@ -11,14 +11,14 @@ import re
 #input start
 #directory to process
 path="./postProcessing/forces"
-#This is the filename in each time directories.
+#This is the filename in ./postProcessing/sets/<time directories>/
 filename='forces.dat'
 #end of input
 ######################################################################
 
 
+#DO NOT modify code below
 ######################################################################
-#do not modify contents below
 
 def mysort(tobesorted):
   'This function sort a list of floating numbers in ascending order.'

@@ -698,7 +698,7 @@ def write_boundaryData_vector(vector,t,name,para,dir='./constant',foam_class='ve
 #                 write_snappyHexMeshDict_component                  #
 #--------------------------------------------------------------------#
 #This function write sub-dictionary in snappyHexMeshDict
-#Currently supported sug-dictionary: geometry, features, refinementSurfaces
+#Currently supported sub-dictionary: geometry, features, refinementSurfaces
 #Will search all STL files in constant/triSurface and use them
 def write_snappyHexMeshDict_component(para,systemDir = './system'):
     #para is a python dictionary containing the parameters
@@ -769,3 +769,47 @@ def write_snappyHexMeshDict_component(para,systemDir = './system'):
         
 
 
+#--------------------------------------------------------------------#
+#                 write_controlDict_component                  #
+#--------------------------------------------------------------------#
+#This function write sub-dictionary in controlDict 
+#Currently supported sub-dictionary: 
+#1. forces
+    #Will search all STL files in constant/triSurface and use their name as 
+    #patch name on which forces are measured
+def write_controlDict_component(para,systemDir = './system'):
+    #para is a python dictionary containing parameters
+    #In current version para should contain at least these keys:
+    #subDictName: a list of name of sub-dictionaries to be written
+    import os
+    if 'subDictName' in para:
+        subDictName = para['subDictName']
+    else:
+        print 'must specify which sub-dictionary you want to build'
+        print "e.g. para['subDictName'] = ['forces']"
+        sys.exit()
+    if 'forces' in subDictName:
+        print "writing 'forces' into: ", systemDir
+        dict_file = open(os.path.join(systemDir, 'forces'), 'w')
+        log_file = open(os.path.join(systemDir, 'write_forces.log'), 'w')
+        log_file.write('Input dictionary contains these parameters:\n')
+        for (key,value) in para.items():
+            line=str(key)+': '+str(value)+'\n'
+            log_file.write(line)
+        dict_file.write('/*--------------------------------*- C++ -*----------------------------------*/\n')
+        for file in os.listdir('./constant/triSurface'):
+            if file.endswith('.stl'):
+                dict_file.write('forces_'+file[:-4]+'\n')
+                dict_file.write('{\n')
+                dict_file.write('type forces;\n')
+                dict_file.write('functionObjectLibs ("libforces.so");\n')
+                dict_file.write('patches ('+file[:-4]+'); \n')
+                dict_file.write('log   yes;\n')
+                dict_file.write('pName p;\n')
+                dict_file.write('UName U;\n')
+                dict_file.write('rhoName rhoInf;\n')
+                dict_file.write('rhoInf 998.2; // Reference density, fluid.\n')
+                dict_file.write('CofR (0 0 0); // Origin for moment calculations\n')
+                dict_file.write('outputControl timeStep;\n')
+                dict_file.write('outputInterval 1;\n')
+                dict_file.write('}\n')
