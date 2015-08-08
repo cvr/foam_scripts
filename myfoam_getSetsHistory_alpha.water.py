@@ -5,17 +5,15 @@
 import os
 import csv
 import sys,getopt
-#directory to process
-#data file should be obained with sample utility. (interpolation scheme should be cell)
-path="./postProcessing/sets"
-#This is the filename in each time directories.
-filename='origin_alpha.water.csv'
-#algorithms to get wave height:
+#input file should be obained with sample utility. (interpolation scheme should be cell)
+#Algorithms to get wave height:
 #1: sweep from top to bottom to get free surface position, which is defined as wave height; 
 #2: sweep from bottom to top to get free surface; 
 #3: integrate in upright direction to get wave height
 method = 3
 
+#DO NOT edit code below
+################################################################################
 def mysort(tobesorted):
   'This function sort a list of floating numbers in ascending order.'
   for i in range(len(tobesorted)):
@@ -76,10 +74,10 @@ def main(argv,input_filename,input_path):
     print "input file path:",path
     if method == 2:
         print "sweep from bottom to top"
-        m_name = 'bottomtotop'
+        m_name = 'bottomToTop'
     elif method == 1:
         print "sweep from top to bottom"
-        m_name = 'toptobottom'
+        m_name = 'topToBottom'
     elif method == 3:
         print "integrate to get wave height"
         m_name = 'integrate'
@@ -192,6 +190,11 @@ def main(argv,input_filename,input_path):
       else: 
           print "incorrect setup for sweeping direction"
           sys.exit()
+    print "Finished."
 
 #main part
+#directory to process
+path="./postProcessing/sets"
+#This is the default filename in each time directories.
+filename='origin_alpha.water.csv'
 main(sys.argv[1:],filename,path)

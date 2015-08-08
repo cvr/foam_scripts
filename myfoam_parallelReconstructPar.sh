@@ -7,13 +7,13 @@ echo "
      "
      
 USAGE="
-      USAGE: $0 -n <NP> -f fields -o <OUTPUTFILE>
+      USAGE: myfoam_parallelReconstructPar -n <Number of processors> -t <startTime,stopTime> -l <log_directory> -f <fields to be reconstructed> -o <OUTPUTFILE> 
         -f (fields) is optional, fields given in the form T,U,p; option is passed on to reconstructPar
   -t (times) is optional, times given in the form tstart,tstop
         -o (output) is optional (currently disable)
 
     Example:
-    ./parReconstructPar.sh -n 4 -t 20,25 
+    ./parReconstructPar.sh -n 4 -t 20,25 -f p_rgh,U,alpha.water
 "
 
 
@@ -24,7 +24,7 @@ if [ $# == 0 ]; then
 fi
 
 #Use getopts to pass the flags to variables
-while getopts "f:n:o:t:" opt; do
+while getopts "f:n:o:t:l:" opt; do
   case $opt in
     f) if [ -n $OPTARG ]; then
   FIELDS=$(echo $OPTARG | sed 's/,/ /g')
@@ -43,6 +43,10 @@ while getopts "f:n:o:t:" opt; do
   THIGH=$(echo $OPTARG | cut -d ',' -f2)
   fi
       ;;
+    l) if [ -n $OPTARG ]; then
+          LOGDIR=$OPTARG
+       fi
+       ;;
     \?)
       echo "$USAGE" >&2
       exit 1
@@ -147,7 +151,10 @@ NCHUNK=$(($NSTEPS/$NJOBS))
 NREST=$(($NSTEPS%$NJOBS))
 TSTART=$TMIN
 
-LOGDIR="log.parReconstructPar"
+if [ -z $LOGDIR ]
+then
+    LOGDIR="log.parReconstructPar"
+fi
 if [[ -d $LOGDIR ]]
 then 
     echo "removing old log dir"
@@ -190,7 +197,8 @@ do
         PIDS="$PIDS $(pgrep -n -x $APPNAME)" # get the PID of the latest (-n) job exactly matching (-x) $APPNAME
       else
         $($APPNAME -time $TSTART:$TSTOP > $LOGDIR/output-$TSTART-$TSTOP &)
-  echo "Job started with PID $(pgrep -n -x $APPNAME)"
+        sleep 2
+        echo "Job started with PID $(pgrep -n -x $APPNAME)"
   PIDS="$PIDS $(pgrep -n -x $APPNAME)"
     fi
    fi
@@ -198,7 +206,8 @@ do
   let NSTART=$NSTOP+1
   TSTART=$(ls processor0 -1v | sed '/constant/d' | sed -n $NSTART$P)
 done
-echo "PIDS for all the process are: $PIDS"
+echo "PIDS for all the processes are: $PIDS"
+echo "Running...This may take a long time."
 
 #sleep until jobs finish
 #if number of running jobs > 0, hold loop until job finishes

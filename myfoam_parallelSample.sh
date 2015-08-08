@@ -7,13 +7,16 @@ echo "
      "
      
 USAGE="
-      USAGE: $0 -n <Number of processors> -t <startTime,stopTime>
+      USAGE: $0 -n <Number of processors> -t <startTime,stopTime> -l <log_directory>
       -t (times) is optional, times given in the form tstart,tstop
       Example:
       ./parSample.sh -n 4 -t 20,25 
 
       Notice:
       1.If -t option is not specified, first time directory is ommited since it's probably 0 directory. 
+      2.It's quite memory consuming. e.g. A case with 2e7 cells can consume 10 gigabyte memory.
+        If sum of memory consumed by all sample processes exceed total memory available on this node,
+        some sample processes may end up with nothing sampled. 
 "
 
 ################################################################################
@@ -26,7 +29,7 @@ if [ $# == 0 ]; then
 fi
 
 #Use getopts to pass the flags to variables
-while getopts "n:t:" opt; do
+while getopts "n:t:l:" opt; do
   case $opt in
     n) if [ -n $OPTARG ]; then
           NJOBS=$OPTARG
@@ -38,6 +41,10 @@ while getopts "n:t:" opt; do
           echo "From input:"
           echo "Lower time = $TLOW"
           echo "Higher time  = $THIGH"
+       fi
+       ;;
+    l) if [ -n $OPTARG ]; then
+          LOGDIR=$OPTARG
        fi
        ;;
     \?)
@@ -141,13 +148,16 @@ NCHUNK=$(($NSTEPS/$NJOBS))
 NREST=$(($NSTEPS%$NJOBS))
 TSTART=$TMIN
 
-LOGDIR="log.parSample"
+if [ -z $LOGDIR ]
+then
+    LOGDIR="log.parSample"
+fi
 if [[ -d $LOGDIR ]]
 then 
     echo "removing old log dir"
     rm $LOGDIR -r
 fi
-echo "making log dir"
+echo "making log dir: $LOGDIR"
 mkdir $LOGDIR
 
 ################################################################################
@@ -180,6 +190,8 @@ do
   then  
     echo "Starting Job $i - sampling time = $TSTART through $TSTOP"
     $($APPNAME -time $TSTART:$TSTOP > $LOGDIR/output-$TSTART-$TSTOP &)
+    #advanced mode, assign process to a certain processor
+    #$(taskset -c ${i} $APPNAME -time $TSTART:$TSTOP > $LOGDIR/output-$TSTART-$TSTOP &)
     sleep 2 #wait for PID appearing in ps
   echo "Job started with PID $(pgrep -n -x $APPNAME)"
   #-n: will select only the newest (most recently started) of the matching processes.
@@ -191,11 +203,12 @@ do
   let NSTART=$NSTOP+1
   TSTART=$(ls | sed '/^[0-9]*[\.]*[0-9]*$/!d' | sort -g | sed -n $NSTART$P)
 done
-echo "PIDS for all the process are: $PIDS"
+echo "PIDS for all the processes are: $PIDS"
 if [[ ! -d postProcessing/sets ]]
 then 
     mkdir postProcessing/sets -p
 fi
+echo "Running...This may take a long time."
 
 #set -x
 #trap read debug
@@ -205,14 +218,16 @@ NMORE_OLD=$(echo 0)
 until [ $(ps -p $PIDS | wc -l) -eq 1 ]; # check for PIDS instead of $APPNAME because other instances might also be running 
   do 
     sleep 10
-    NNOW=$(ls postProcessing/sets | wc -l) ##count time directories in postProcessing/sets
-    NMORE=$(echo $NSTEPS-$NNOW | bc) ##calculate number left to be sampled 
-    if [ $NMORE != $NMORE_OLD ]
-      then
-      echo "number of time directories finished: $NNOW"
-      echo "$NMORE directories remaining..."
-    fi
-    NMORE_OLD=$NMORE
+    #Output below are disable because in case there are old time directories in ./postProcessing/sets,
+    #value of NNOW is not useful for current run. 
+    #NNOW=$(ls postProcessing/sets | wc -l) ##count time directories in postProcessing/sets
+    #NMORE=$(echo $NSTEPS-$NNOW | bc) ##calculate number left to be sampled 
+    #if [ $NMORE != $NMORE_OLD ]
+    #  then
+    #  echo "number of time directories finished: $NNOW"
+    #  echo "$NMORE directories remaining..."
+    #fi
+    #NMORE_OLD=$NMORE
   done
 
 

@@ -1,109 +1,179 @@
 ################################################################################
------------------------Documentation for myfoam scripts-------------------------
+#------------------Documentation for myfoam series scripts---------------------#
+#---------------------------Author: Xinsheng Qin-------------------------------#
 ################################################################################
 
-These are some useful scripts for pre-processing or post-processing for OpenFOAM.
-To use these scripts, put following two lines to your $HOME/.bashrc (suppose you put this folder at $HOME)
-export PATH=$PATH:$HOME/myfoam_scripts
-export PYTHONPATH=$PYTHONPATH:$FOAM_SCRIPTS
+These are some useful scripts for pre-processing or post-processing OpenFOAM 
+cases.
+To use these scripts:
+1. copy this directory to where you want, like $HOME.
+2. put following two lines to your $HOME/.bashrc (suppose you put this directory
+at $HOME):
+   export PATH=$PATH:$HOME/myfoam_scripts
+   export PYTHONPATH=$PYTHONPATH:$FOAM_SCRIPTS
 
-Then you can use these scripts by typing its script name in case folder.
+Then you can use these scripts by typing its script name in OpenFOAM case root 
+directory.
 
 1.Scripts introduction
 
 
-    myfoam_remove_timefiles
-    --------------------------------------------------------------------------------
-    This script will move all time files in a case to a new created file named 'timeFilesToBeRemoved'. 
-    After checking, you can manully remove the folder "timeFilesToBeRemoved"
-
+  1.myfoam_remove_timefiles
+    ----------------------------------------------------------------------------
+    This script moves all time directory in a case root directory to a new 
+    created directory named 'timeFilesToBeRemoved'. After checking that 
+    directory, you can manully remove it.
     To use this scripts, simply type 'myfoam_remove_timefiles' in case folder.
 
 
 
-    myfoam_write_blockMeshDict
-    --------------------------------------------------------------------------------
-    This script is used to write blockMeshDict when you need to deal with multiple blocks with nonuniform mesh.
+  2.myfoam_write_blockMeshDict
+    ----------------------------------------------------------------------------
+    This script is used to write blockMeshDict when you need to specify many 
+    blocks with NONUNIFORM mesh. Users do not have to compute mesh gradient or 
+    consider how to align blocks and faces in blockMeshDict. It can generate 
+    blockMeshDict file in ./constant/polyMesh. A log file named 
+    'write_blockMeshDict.log' will be created in ./constant/polyMesh for users 
+    to check their input and the result.
 
-    Users do not have to compute mesh gradient or consider how to align blocks and faces in blockMeshDict.
-
-    It can automatically generate blockMeshDict in ./constant/polyMesh.
-    A log file named write_blockMeshDict.log will be created in ./constant/polyMesh for users to check their input and the result.
-
-    To use this script, following these steps:
-        1.Copy this script to current case folder (namely where you have folders like constant and system).
-        2.Edit this script with editor, according to the comments in it. 
-        3.Run it by typing './myfoam_write_blockMeshDict' in current case folder. (Don't miss './') 
+    To use this script, follow these steps:
+        1.Copy this script to current case root directory (namely where you have
+          directories like constant/ and system/).
+        2.Edit this script with an editor, according to the instruction in it. 
+        3.Run it by typing './myfoam_write_blockMeshDict' in current case folder. 
+          (DO NOT miss './') 
 
 
 
-    myfoam_mesh_calculator
-    --------------------------------------------------------------------------------
-    This script is used to calculate parameters when you need to set up for nonuniform mesh.
+  3.myfoam_mesh_calculator
+    ----------------------------------------------------------------------------
+    This script is used to calculate mesh size parameters when you need to 
+    specify it in blockMeshDict for nonuniform mesh.
+    3 modes are available.
 
-    3 Modes are available.
-
-        1.Users specify length of the edge, size of first cell and size of last cell.
+        1.Input length of the edge, size of first cell and size of last cell.
           It will compute and output following parameters: 
-          *ratio of size of last cell to first cell, delta_n/delta_1 
-          *total number of cells along this edge
+          * ratio of size of last cell to first cell, delta_n/delta_1 (needed in
+            blockMeshDict) 
+          * total number of cells along this edge (needed in blockMeshDict)
 
-        2.Users specify length of the edge, size of first cell and number of cells along this edge.
+        2.Input length of the edge, size of first cell and number of cells along
+          this edge.
           It will compute and output following parameters: 
-          *ratio between two adjacent cells, r = delta_{i+1} / delta_{i}
-          *ratio of size of last cell to first cell, delta_n/delta_1 
-          *size of last cell
+          * ratio between two adjacent cells, r = delta_{i+1} / delta_{i}
+          * ratio of size of last cell to first cell, delta_n/delta_1 (needed in
+            blockMeshDict)
+          * size of last cell
 
-        3.Users specify length of the edge, size of last cell and number of cells along this edge.
+        3.Input length of the edge, size of last cell and number of cells along
+          this edge.
           It will compute and output following parameters: 
-          *ratio between two adjacent cells, r = delta_{i+1} / delta_{i}
-          *ratio of size of last cell to first cell, delta_n/delta_1 
-          *size of first cell
+          * ratio between two adjacent cells, r = delta_{i+1} / delta_{i}
+          * ratio of size of last cell to first cell, delta_n/delta_1 (needed in
+            blockMeshDict)
+          * size of first cell
 
-    To use this script, edit last part of this script with editor, according to the comments in it. 
-    Then run it in any folder by typing "myfoam_mesh_calculator".
-    Result will be output on monitor.
+    To use this script, edit last part of this script with an editor, according
+    to the instruction in it. Then run it in any folder by typing 
+    'myfoam_mesh_calculator'. Result will be output on monitor.
     
 
 
-    myfoam_getSetsHistory_alpha1
-    --------------------------------------------------------------------------------
-    This script is used to get time history of wave height.
-    It will read data from ./postProcessing/sets/timefiles/gauge_name_alpha1.csv and then
-    generate a file named history_gauge_name_alph1.csv in ./postProcessing .
-    The first column in that file is time, and the second is wave height.
+  4.myfoam_getSetsHistory_alpha.water
+    ----------------------------------------------------------------------------
+    This script is used to get time history of wave height and write it 
+    into one csv file.  It reads data from 
+    ./postProcessing/sets/<time directories>/<input file name> and generates a 
+    file named 'history_<algorithm>_<input file name>_alpha.water.csv' 
+    in ./postProcessing/ directory. Data in the first column in the file are 
+    time, and data in the second column are corresponding wave height.
 
-    To use this script, use any editor to open it. then change 'filename' variable in that file
-    to gauge_name_alpha1.csv according to what is actually in your ./postProcessing/sets/timefiles .
-    Then run script by typing 'myfoam_getSetsHistory_alpha1' in current case folder.
+    To use this script, type:
+    'myfoam_getSetsHistory_alpha.water -i <input file name>' 
+    in case root directory. 
+    <input file name> is name of the a certain file in 
+    postProcessing/sets/<time directories>/.
+    e.g. 'myfoam_getSetsHistory_alpha.water -i a1_alpha.water.csv'
+    if -i option is not specified, 'filename' variable at the end of the code
+    is used as <input file name>.
 
-
-
-    myfoam_getSetsHistory_alpha1
-    --------------------------------------------------------------------------------
-    This script is used to get time history of sampled velocity.
-    It will read data from ./postProcessing/sets/timefiles/gauge_name_U.csv and then
-    generate some files named history_gauge_name_U.csv in ./postProcessing/history .
-    The first column in those files is time, the second is coordinates (based on direction
-    of your sampled line), the third is Ux, the fourth Uy and the last is Uz.
-
-    To use this script, use any editor to open it. Then change 'filename' variable in that file
-    to gauge_name_U.csv according to what is actually in your ./postProcessing/sets/timefiles .
-    Then run script by typing 'myfoam_getSetsHistory_U' in current case folder.
-
-
-    myfoam_getforcesHistory
-    --------------------------------------------------------------------------------
-    If your case was interupted during the running, you may get several forces.dat files 
-    which you want to build a complete force data file from.
-    This file is written to handle this.
-    It will also delete the comment and parentheses in those forces.dat files and concatenate
-    each element in one row with ",", which is a standard csv file. 
-    The new csv file will be put in ./postProcessing
-
-    To use this script, use any editor to open it. 
-    There is a input section at the beginning of this file where you should modify the name
-    and path of the files forces.dat if they are not named and put as default value.
+    3 kinds of algorithms to compute wave height are available and can be chosen
+    by editing the beginning of the code with an editor. They are:
+    *1.sweep from top to bottom to get free surface position, which is defined 
+       as wave height; 
+    *2.sweep from bottom to top to get free surface; 
+    *3.integrate in upright direction to get wave height
 
 
 
+  5.myfoam_getSetsHistory_U
+    ----------------------------------------------------------------------------
+    This script is used to get time history of sampled velocity and write them 
+    into csv files. It reads data from
+    ./postProcessing/sets/<time directories>/<input file name> and creates a 
+    directory named <input file name> in ./postProcessing/history/, where time 
+    history of velocity at different sampling points are written into different 
+    csv files. Data in the first column in those files are time, data in the the
+    second column are coordinates (distance, based on direction of your sampling
+    line), the third are Ux, the fourth are Uy and the last are Uz.
+
+    To use this script, type:
+    'myfoam_getSetsHistory_U -i <input file name>' 
+    in case root directory. 
+    <input file name> is name of the a certain file in 
+    postProcessing/sets/<time directories>/.
+    e.g. 'myfoam_getSetsHistory_U -i a1_U.csv'
+    if -i option is not specified, 'filename' variable at the end of the code
+    is used as <input file name>.
+
+
+  6.myfoam_getforcesHistory
+    ----------------------------------------------------------------------------
+    If your case was interupted during the running, you may get several 
+    forces.dat files which you want to build a complete time history of force 
+    file from.  This file is written to do this.  It will also delete the 
+    comment and parentheses in those forces.dat files and concatenate each 
+    element in one row with ",", which leads to a standard csv file format. The 
+    new csv file will be put in ./postProcessing/.
+
+    To use this script, use an editor to open it. There is a input section at 
+    the beginning of this file where you should modify the 'filename' variable,
+    which is name of the force file in ./postProcessing/forces/, and modify the
+    'path' variable, which is relative path to the directory where 'filename' 
+    is stored. 
+
+
+
+  7.myfoam_parallelReconstructPar
+    ----------------------------------------------------------------------------
+    This is a script to run reconstructPar in pseudo-parallel mode by breaking time directories into multiple ranges. 
+
+    To use this script, type:
+    myfoam_parallelReconstructPar -n <Number of processors> -t <startTime,stopTime> -l <log_directory> -f <fields to be reconstructed>
+    -f <fields to be reconstructed> is optional, fields given in the form T,U,p; the option is passed on to reconstructPar
+    -t <startTime,stopTime> is optional, times given in the form tstart,tstop
+    -l <log_directory> is optional, it specifies name of the directory to put log file
+    Notice:
+    1.If -t option is not specified, first time directory is ommited since it's probably 0 directory. 
+    2.It's quite memory consuming. e.g. A case with 2e7 cells can consume 10 gigabyte memory.
+      If sum of memory consumed by all sample processes exceed total memory available on this node,
+      some sample processes may end up with nothing sampled. 
+
+  6.myfoam_getforcesHistory
+    ----------------------------------------------------------------------------
+    To use this script, type:
+      -t (times) is optional, times given in the form tstart,tstop
+      Example:
+      ./parSample.sh -n 4 -t 20,25 
+
+      Notice:
+      1.If -t option is not specified, first time directory is ommited since it's probably 0 directory. 
+      2.It's quite memory consuming. e.g. A case with 2e7 cells can consume 10 gigabyte memory.
+        If sum of memory consumed by all sample processes exceed total memory available on this node,
+        some sample processes may end up with nothing sampled. 
+  6.myfoam_getforcesHistory
+    ----------------------------------------------------------------------------
+  6.myfoam_getforcesHistory
+    ----------------------------------------------------------------------------
+  6.myfoam_getforcesHistory
+    ----------------------------------------------------------------------------

@@ -1,7 +1,8 @@
 #!/usr/bin/python
 #author:shawn
 #date:Oct 12, 2014
-#This script should be excuted in current case directory. It can abstract the velocity sampled by cloud points to corresponding history. The results are located in './postProcessing/history'.
+#This script should be excuted in current case directory. 
+#It can extract the velocity sampled by cloud points to corresponding history. The results are located in './postProcessing/history'.
 
 import os
 import csv
