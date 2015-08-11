@@ -722,13 +722,17 @@ def write_snappyHexMeshDict_component(para,systemDir = './system'):
             line=str(key)+': '+str(value)+'\n'
             log_file.write(line)
         dict_file.write('/*--------------------------------*- C++ -*----------------------------------*/\n')
+        count = 0
         for file in os.listdir('./constant/triSurface'):
             if file.endswith('.stl'):
+                print "found: ",file
+                count = count + 1
                 dict_file.write(file + '\n')
                 dict_file.write('{\n')
                 dict_file.write('    type triSurfaceMesh;\n')
                 dict_file.write('    name ' + file[:-4] + ';\n')
                 dict_file.write('}\n')
+        print "finished writing ",count," objects into geometry sub-dictionary."
 
     if 'features' in subDictName:
         print "writing 'features' into: ", systemDir
@@ -739,12 +743,16 @@ def write_snappyHexMeshDict_component(para,systemDir = './system'):
             line=str(key)+': '+str(value)+'\n'
             log_file.write(line)
         dict_file.write('/*--------------------------------*- C++ -*----------------------------------*/\n')
+        count = 0
         for file in os.listdir('./constant/triSurface'):
             if file.endswith('.stl'):
+                print "found: ",file
+                count = count + 1
                 dict_file.write('{\n')
                 dict_file.write('    file "' + file[:-4] + '.eMesh";\n')
                 dict_file.write('    level 2;\n')
                 dict_file.write('}\n')
+        print "finished writing ",count," objects into features sub-dictionary."
 
     if 'refinementSurfaces' in subDictName:
         print "writing 'refinementSurfaces' into: ", systemDir
@@ -755,8 +763,11 @@ def write_snappyHexMeshDict_component(para,systemDir = './system'):
             line=str(key)+': '+str(value)+'\n'
             log_file.write(line)
         dict_file.write('/*--------------------------------*- C++ -*----------------------------------*/\n')
+        count = 0
         for file in os.listdir('./constant/triSurface'):
             if file.endswith('.stl'):
+                print "found: ",file
+                count = count + 1
                 dict_file.write(file[:-4] + '\n')
                 dict_file.write('{\n')
                 dict_file.write('    level (1 2);\n')
@@ -766,6 +777,7 @@ def write_snappyHexMeshDict_component(para,systemDir = './system'):
                 dict_file.write('        inGroups (house);\n') 
                 dict_file.write('    }\n')
                 dict_file.write('}\n')
+        print "finished writing ",count," objects into refinementSurfaces sub-dictionary."
         
 
 
