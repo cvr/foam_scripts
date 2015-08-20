@@ -156,24 +156,18 @@ directory.
     Notice:
     1.If -t option is not specified, first time directory is ommited since it's probably 0 directory. 
     2.It's quite memory consuming. e.g. A case with 2e7 cells can consume 10 gigabyte memory.
-      If sum of memory consumed by all sample processes exceed total memory available on this node,
-      some sample processes may end up with nothing sampled. 
+      If sum of memory consumed by all reconstructPar processes exceed total memory available on this node,
+      some reconstructPar processes will finish with some time directories not reconstructed. 
 
-  6.myfoam_getforcesHistory
+  7.myfoam_parallelSample
     ----------------------------------------------------------------------------
+    This is a script to run sample in pseudo-parallel mode by breaking time directories into multiple ranges. 
+
     To use this script, type:
-      -t (times) is optional, times given in the form tstart,tstop
-      Example:
-      ./parSample.sh -n 4 -t 20,25 
-
-      Notice:
-      1.If -t option is not specified, first time directory is ommited since it's probably 0 directory. 
-      2.It's quite memory consuming. e.g. A case with 2e7 cells can consume 10 gigabyte memory.
-        If sum of memory consumed by all sample processes exceed total memory available on this node,
-        some sample processes may end up with nothing sampled. 
-  6.myfoam_getforcesHistory
-    ----------------------------------------------------------------------------
-  6.myfoam_getforcesHistory
-    ----------------------------------------------------------------------------
-  6.myfoam_getforcesHistory
-    ----------------------------------------------------------------------------
+    myfoam_parallelSample -n <Number of processors> -t <startTime,stopTime> -l <log_directory> 
+    -t <startTime,stopTime> is optional, times given in the form tstart,tstop
+    -l <log_directory> is optional, it specifies name of the directory to put log file
+    Notice:
+    1.It's quite memory consuming. e.g. A case with 2e7 cells can consume 10 gigabyte memory.
+      If sum of memory consumed by all sample processes exceed total memory available on this node,
+      some sample processes may end up with data at some time not sampled. 
