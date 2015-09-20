@@ -7,13 +7,13 @@ echo "
      "
      
 USAGE="
-      USAGE: myfoam_parallelReconstructPar -n <Number of processors> -t <startTime,stopTime> -l <log_directory> -f <fields to be reconstructed> -o <OUTPUTFILE> 
+      USAGE: myfoam_parallelReconstructPar.sh -n <Number of processors> -t <startTime,stopTime> -l <log_directory> -f <fields to be reconstructed> -o <OUTPUTFILE> 
         -f (fields) is optional, fields given in the form T,U,p; option is passed on to reconstructPar
   -t (times) is optional, times given in the form tstart,tstop
         -o (output) is optional (currently disable)
 
     Example:
-    ./parReconstructPar.sh -n 4 -t 20,25 -f p_rgh,U,alpha.water
+    myfoam_parallelReconstructPar.sh -n 4 -t 20,25 -f p_rgh,U,alpha.water
 "
 
 

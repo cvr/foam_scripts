@@ -159,9 +159,9 @@ def get_r_given_deltan(deltan,length,n,debug=0):
 #delta_1 is size of first cell
 #delta_n is size of last cell
 #e.g. (uncomment and modifiy following 4 lines to use this mode)
-#length=6
-#delta_1=0.02
-#delta_n=0.1
+#length=14.5
+#delta_1=1.1428571
+#delta_n=0.06
 #get_r_given_delta1(delta_1,length,get_n(delta_1,delta_n,length,debug=1),debug=2)
 
 
@@ -172,10 +172,10 @@ def get_r_given_deltan(deltan,length,n,debug=0):
 #delta_1 is size of first cell
 #n is total number of cells along this edge
 #e.g. (uncomment and modifiy following 4 lines to use this mode)
-#length=100
-#delta_1=1
-#n=25
-#get_r_given_delta1(delta_1,length,n)
+length=0.4
+delta_1=0.01
+n=20
+get_r_given_delta1(delta_1,length,n,debug=1)
 
 
 ################################################################################
