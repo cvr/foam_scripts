@@ -10,7 +10,7 @@ import sys,getopt
 #1: sweep from top to bottom to get free surface position, which is defined as wave height; 
 #2: sweep from bottom to top to get free surface; 
 #3: integrate in upright direction to get wave height
-method = 3
+method = 1
 
 #DO NOT edit code below
 ################################################################################
@@ -73,13 +73,10 @@ def main(argv,input_filename,input_path):
     print "name of input files:",filename
     print "input file path:",path
     if method == 2:
-        print "sweep from bottom to top"
         m_name = 'bottomToTop'
     elif method == 1:
-        print "sweep from top to bottom"
         m_name = 'topToBottom'
     elif method == 3:
-        print "integrate to get wave height"
         m_name = 'integrate'
     else: 
         print "incorrect setup for sweeping direction"
@@ -105,6 +102,7 @@ def main(argv,input_filename,input_path):
       #print(file.name)
       reader=csv.reader(file) 
       if method ==2:#sweep from bottom to top
+          print "sweep from bottom to top to look for interface"
           first_loop = True
           for row in reader:
             if row[0]=='distance':
@@ -134,10 +132,14 @@ def main(argv,input_filename,input_path):
 
           flag+=1
       elif method == 1:#sweep from top to bottom
+          print "sweep from top to bottom to look for interface"
           first_loop = True
           for row in reversed(list(reader)):
               if row[0]=='distance': #reached first row. Water depth should be 0
-                  writer.writerow([filelist[flag],dist1]) 
+                  if first_loop != True:
+                      writer.writerow([filelist[flag],dist1]) 
+                  else:
+                      print "Warning! There may be no data in file: " + path
                   break
               if first_loop == True:#In first loop, do not interpolate
                   dist1=float(row[0])
@@ -163,6 +165,7 @@ def main(argv,input_filename,input_path):
 
           flag+=1
       elif method == 3:#integrate in z direction to get wave height
+          print "integrate to get wave height to look for interface"
           first_loop = True
           h = 0
           for row in reader:
