@@ -50,12 +50,12 @@ def main(argv,input_filename,input_path):
     default_filename = True
     default_path = True
     try:
-       opts, args = getopt.getopt(argv,"i:p:",["ifile=","ipath="])
+        opts, args = getopt.getopt(argv,"i:p:m:",["ifile=","ipath=","method="])
        #opts is a list of (option, value) pairs. 
        #args is the list of program arguments left after the option list was stripped.
     except getopt.GetoptError:
        print 'invalid options'
-       print 'myfoam_getSetsHistory_U -i <input file name> -p <input file path>'
+       print 'myfoam_getSetsHistory_U -i <input file name> -p <input file path> -m <method number>'
        sys.exit(2)
     for opt, arg in opts:
        if opt in ("-i", "--ifile"):
@@ -64,23 +64,35 @@ def main(argv,input_filename,input_path):
        elif opt in ("-p", "--ipath"):
           path = arg
           default_path = False
+       elif opt in ("-m", "--method"):
+           method = int(arg)
+           if not method in (1,2,3):
+               print 'invalid options'
+               print 'myfoam_getSetsHistory_U -i <input file name> -p <input file path> -m <method number>'
+               print 'method number should be 1, 2 or 3'
+               print '#1: sweep from top to bottom to get free surface position, which is defined as wave height;' 
+               print '#2: sweep from bottom to top to get free surface;' 
+               print '#3: integrate in upright direction to get wave height'
+           print "Select method: " + str(method) + ', which is: '
     if default_filename == True:
         filename = input_filename
     if default_path == True:
         path = input_path
 
-
-    print "name of input files:",filename
-    print "input file path:",path
     if method == 2:
+        print "sweep from bottom to top to look for interface"
         m_name = 'bottomToTop'
     elif method == 1:
+        print "sweep from top to bottom to look for interface"
         m_name = 'topToBottom'
     elif method == 3:
+        print "integrate to get wave height to look for interface"
         m_name = 'integrate'
     else: 
         print "incorrect setup for sweeping direction"
         sys.exit()
+    print "name of input files:",filename
+    print "input file path:",path
 
 
     results=[['time','waveheight']]
@@ -102,7 +114,6 @@ def main(argv,input_filename,input_path):
       #print(file.name)
       reader=csv.reader(file) 
       if method ==2:#sweep from bottom to top
-          print "sweep from bottom to top to look for interface"
           first_loop = True
           for row in reader:
             if row[0]=='distance':
@@ -132,7 +143,6 @@ def main(argv,input_filename,input_path):
 
           flag+=1
       elif method == 1:#sweep from top to bottom
-          print "sweep from top to bottom to look for interface"
           first_loop = True
           for row in reversed(list(reader)):
               if row[0]=='distance': #reached first row. Water depth should be 0
@@ -165,7 +175,6 @@ def main(argv,input_filename,input_path):
 
           flag+=1
       elif method == 3:#integrate in z direction to get wave height
-          print "integrate to get wave height to look for interface"
           first_loop = True
           h = 0
           for row in reader:
