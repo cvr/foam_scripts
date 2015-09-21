@@ -11,11 +11,11 @@ import numpy as np
 import codecs
 
 def usage():
-    print "USAGE: myfoam_getSetsHistory_U.py -i <input file> -r <name of wave height file as reference> -p <path of input files>"
+    print "USAGE: myfoam_getUunderWave.py -i <input file> -r <name of wave height file as reference> -p <path of input files>"
     print "       -p option is optional"
     print "       wave height file should be put in ./postProcessing/"
     print "       example:"
-    print "       myfoam_getSetsHistory_U.py -i a1_U.csv -p ./postProcessing/sets -r history_a1_alpha.water.csv"
+    print "       myfoam_getUunderWave.py -i a1_U.csv -p ./postProcessing/sets -r history_a1_alpha.water.csv"
     print "       Please also check the options at the end of this file"
 
 def mysort(tobesorted):
