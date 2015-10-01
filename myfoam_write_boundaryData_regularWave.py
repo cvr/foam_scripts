@@ -19,12 +19,12 @@ para['ymin_inlet']=-0.5#min y coordinates of inlet plane
 para['ymax_inlet']=0.5#max y coordinates of inlet plane
 para['zmin_inlet']=0#min z coordinates of inlet plane
 para['zmax_inlet']=2#max z coordinates of inlet plane
-para['nz']=200#must be integer
+para['nz']=200#number of cells in z direction. must be integer
 para['g']=9.81#gravity acceleration
-para['log_path']='./'#path to save the log file for this code
+para['log_path']='./'#path to save the log file when execute this script 
 para['inlet_patch_name'] = 'inlet'#./constant/boundaryData/inlet_patch_name
 
-#parameters for wave
+#parameters for regular wave in airy wave theory
 wave={}
 wave['depth']=1#depth of water, h
 wave['waveheight']=0.1#wave height, H
@@ -61,7 +61,7 @@ def get_k(para,wave):#compute wave number from omega
     return optimize.brentq(dispersion,0,max_root,args=(omega,depth,g))#return wave number k
 
 #main
-log_file=open(para['log_path']+'myfoam_write_boundaryData.log','w')
+log_file=open(para['log_path']+'myfoam_write_boundaryData_regularWave.log','w')
 wave['k']=get_k(para,wave)
 log_file.write('Compute wave number, k, from frequency, omega. k='+str(wave['k'])+'\n') 
 points=generate_grid(para) #generate points on inlet plane
@@ -107,6 +107,7 @@ for i,t in enumerate(t_list):
     log_file.write( 'velocity:\n'+str(velocity)+'\n')
     write_boundaryData_vector(velocity,t,'U',para)
     #pressure
+    #actually there is no need to prescribe pressure
     p=wave['rho']*para['g']*(-(points[:,2]-wave['depth'])+wave['waveheight']*0.5*np.cosh(wave['k']*(points[:,2]))/np.cosh(wave['k']*wave['depth'])*np.cos(-wave['omega']*t+phase_shifted))
     p=p*alpha_water
 
