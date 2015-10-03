@@ -60,7 +60,12 @@ def get_k(para,wave):#compute wave number from omega
     max_root=1000
     return optimize.brentq(dispersion,0,max_root,args=(omega,depth,g))#return wave number k
 
+################################################################################
 #main
+#initial check
+if ('boundaryData' in os.listdir('./constant')):
+    print "Warning!!\n Old boundaryData exist in ./constant."
+    print "You may need to clean it before creating new data."
 log_file=open(para['log_path']+'myfoam_write_boundaryData_regularWave.log','w')
 wave['k']=get_k(para,wave)
 log_file.write('Compute wave number, k, from frequency, omega. k='+str(wave['k'])+'\n') 

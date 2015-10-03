@@ -202,7 +202,7 @@ def main(argv,input_filename,input_path):
       else: 
           print "incorrect setup for sweeping direction"
           sys.exit()
-    print "Finished."
+    print "Finished.\n"
 
 #main part
 #directory to process

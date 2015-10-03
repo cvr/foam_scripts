@@ -1,36 +1,37 @@
 #!/sw/epd-7.3-2/bin/python
 import numpy as np
 import sys,os
-from scipy import optimize
-from math import pi
+#from scipy import optimize
+from math import sqrt 
 import matplotlib.pyplot as plt
 from mylib_DictWriter import write_boundaryData_scalar,write_boundaryData_vector 
+import pdb
 
 ################################################################################
 #user input start here
 
 #general parameters
 para={}
-para['startTime']=0#start time
-para['endTime']=50#end time
-para['deltaT']=0.02#time step in ./constant/boundaryData/inlet_patch_name
-para['x_inlet']=0#x coordinates of inlet plane
+para['startTime']=0.0#start time. Should be 0 at this stage.
+para['endTime']=10.0#end time
+para['deltaT']=0.1#time step in ./constant/boundaryData/inlet_patch_name
+para['x_inlet']=0.0#x coordinates of inlet plane
 para['ymin_inlet']=-0.5#min y coordinates of inlet plane
 para['ymax_inlet']=0.5#max y coordinates of inlet plane
-para['zmin_inlet']=0#min z coordinates of inlet plane
-para['zmax_inlet']=2#max z coordinates of inlet plane
-para['nz']=200#number of cells in z direction. must be integer
+para['zmin_inlet']=0.0#min z coordinates of inlet plane
+para['zmax_inlet']=1.5#max z coordinates of inlet plane
+para['nz']=50#number of cells in z direction. must be integer
 para['g']=9.81#gravity acceleration
 para['log_path']='./'#path to save the log file when execute this script 
 para['inlet_patch_name'] = 'inlet'#./constant/boundaryData/inlet_patch_name
 
-#parameters for regular wave in airy wave theory
+#bousiness
+#parameters for solitary wave 
 wave={}
-wave['depth']=1#depth of water, h
-wave['waveheight']=0.1#wave height, H
-wave['omega']=pi#wave circular frequency, omega
+wave['depth']=1.0#depth of water
+wave['waveheight']=0.2#wave height
 wave['rho']=998.8#density of water
-#wave['k']=0.5 #wave number is not independent of omega thus it should not be defined here
+wave['initial_phase']=8.0#initial value of kX in sech^2(kX)
 
 
 #user input end here
@@ -50,54 +51,108 @@ def generate_grid(para):#generate points on inlet plane
     points=np.transpose(points)
     return points#return a numpy array. each row is xyz coordinates of a points on the plane
 
-def get_k(para,wave):#compute wave number from omega
-    from math import tanh
-    depth=wave['depth']
-    g=para['g']
-    omega=wave['omega']
-    def dispersion(k,omega,depth,g):
-        return g*k*tanh(k*depth)-omega**2
-    max_root=1000
-    return optimize.brentq(dispersion,0,max_root,args=(omega,depth,g))#return wave number k
+def get_c(para,wave):#compute wave celerity
+    #from math import tanh
+    from math import sqrt
+    depth = wave['depth']
+    g = para['g']
+    a = wave['waveheight']
+    return sqrt(g*depth*(1+a/depth))
 
+def get_k(para,wave):#compute wave number
+    #from math import tanh
+    from math import sqrt
+    depth = wave['depth']
+    a = wave['waveheight']
+    return sqrt((3*a)/(4*depth**3))
+
+################################################################################
 #main
-log_file=open(para['log_path']+'myfoam_write_boundaryData_regularWave.log','w')
-wave['k']=get_k(para,wave)
-log_file.write('Compute wave number, k, from frequency, omega. k='+str(wave['k'])+'\n') 
-points=generate_grid(para) #generate points on inlet plane
+#some functions to be used
+sech = lambda x: (2*np.cosh(x))/(np.cosh(2*x)+1)
+
+#initial check
+if ('boundaryData' in os.listdir('./constant')):
+    print "Warning!!\n Old boundaryData exist in ./constant."
+    print "You may need to clean it before creating new data."
+
+log_file = open(para['log_path']+'myfoam_write_boundaryData_solitaryWave.log','w')
+wave['c'] = get_c(para,wave)
+log_file.write('Compute wave celerity, c. c = '+str(wave['c'])+'\n') 
+wave['k'] = get_k(para,wave)
+log_file.write('Compute wave number, k. k = '+str(wave['k'])+'\n') 
+
+#some abbreviated alias of the input parameters
+a = wave['waveheight']
+d = wave['depth']
+g = para['g']
+c = wave['c']
+k = wave['k']
+
+points = generate_grid(para) #generate points on inlet plane
 log_file.write( 'points on inlet patch: \n'+str(points)+'\n')
-write_boundaryData_vector(points,'','points',para,foam_class='vectorField',foam_object='points') #write points file to ./constant/boundaryData
-t_list=np.arange(para['startTime'],para['endTime'],para['deltaT'])
-t_list=np.append(t_list,para['endTime'])#append endTime to the end of array
+write_boundaryData_vector(points,'','points',para,foam_class = 'vectorField',foam_object = 'points') #write points file to ./constant/boundaryData
+t_list = np.arange(para['startTime'],para['endTime'],para['deltaT'])
+t_list = np.append(t_list,para['endTime'])#append endTime to the end of array
 log_file.write( 'time files to be created: \n'+str(t_list)+'\n')
-from math import pi
-phase_shifted=-pi/2
-eta_list=0.5*wave['waveheight']*np.cos(-wave['omega']*t_list+phase_shifted)#add -pi/2 so that eta=0 at t=0
+#from math import pi
+phase_shifted = wave['initial_phase']-k*(para['x_inlet']-c*para['startTime'])
+#eta_list = 0.5*wave['waveheight']*np.cos(-wave['omega']*t_list+phase_shifted)#add -pi/2 so that eta=0 at t=0
+eta_list = a*(sech(k*(para['x_inlet']-c*t_list+phase_shifted)))**2#use phase_shifted so that at startTime eta = 0
+
+#pdb.set_trace()
+#plot eta_list
+plt.figure()
+plt.plot(t_list,eta_list,'rx',label='wave height')
+legend = plt.legend(loc='upper center', shadow=True, prop={'size':7})
+#plt.xlim(3.0,4.0)
+plt.xlabel('time (s)')
+plt.ylabel('wave height (m)')
+plt.title('wave height history at inlet')
+if not('myplot' in os.listdir('./')):
+    os.mkdir('myplot')
+plt.savefig('./myplot/waveheight_at_inlet.png', bbox_inches='tight')
+plt.close()
+
 log_file.write( 'wave height: \n'+str(eta_list)+'\n')
-depth_list=eta_list+wave['depth']#depth of water at inlet, varying with time
+depth_list = eta_list+d#depth of water at inlet, varying with time
 log_file.write( 'water depth at inlet: \n'+str(depth_list)+'\n')
 log_file.write('\n\n')
 log_file.write('#'*80+'n')
-log_file.write('Create velocity and pressure for each time step:\n')
+log_file.write('Create velocity U and alpha.water at inlet for each time step:\n')
+
+
 for i,t in enumerate(t_list):
     #if z coordinates in a row of points is smaller than eta, alpha_water should be 1 there and 0 otherwise.
-    log_file.write( '\nt= '+str(t)+'\n')
-    alpha_water=0.5*(np.sign(depth_list[i]-points[:,2])+1)#a list containing value of alpha.water in each cell on inlet patch
-    n1=0
-    for n in range(alpha_water.size): #compute how many cells are with value alpha.water=1
+    log_file.write( '\nt = '+str(t)+'\n')
+    alpha_water = 0.5*(np.sign(depth_list[i]-points[:,2])+1)#a list containing value of alpha.water in each cell on inlet patch
+    n1 = 0
+    for n in range(alpha_water.size): #compute how many cells have value alpha.water=1 AT ONE COLUMN
         if alpha_water[n] > 0:
             n1=n1+1
             continue
         else:
             break
+    n2 = para['nz'] - n1
     log_file.write( 'alpha.water in each cell: \n'+str(alpha_water)+'\n')
-    write_boundaryData_scalar(alpha_water,t,'alpha.water',para)
-    u=0.5*wave['waveheight']*wave['omega']*np.cosh(wave['k']*(points[:,2]))/np.sinh(wave['k']*wave['depth'])*np.cos(-wave['omega']*t+phase_shifted)
+    #write_boundaryData_scalar(alpha_water,t,'alpha.water',para)
+
+    #compute u
+    eta = eta_list[i] #wave height at this time 
+    phase = para['x_inlet']-c*t+phase_shifted #X = x - ct + phase_shifted
+    #u= eta/d*sqrt(g*d)*( 1-0.25*eta/d + d/3*d/eta*(1-1.5*(points[:,2]-d)**2/d**2) * (2*a* k**2 * (np.cosh(2*k*phase)-2) * (sech(k*phase))**4 ))
+    u = c/sqrt(g*a) * ( (a/d+3*(a/d)**2 * (1/6.-1/2.*((points[:,2]-d)/d)**2)) * eta/a - (a/d)**2*(7/4.-9/4.*((points[:,2]-d)/d)**2)*(eta/a)**2 )
     u=u*alpha_water#u in all cells above free surface are set to zero
-    u[n1:]=u[n1-1]#u in all cells above free surface are set to equal to velocity just below the free surface 
-    w=0.5*wave['waveheight']*wave['omega']*np.sinh(wave['k']*(points[:,2]))/np.sinh(wave['k']*wave['depth'])*np.sin(-wave['omega']*t+phase_shifted)
+    u[n1:para['nz']]=u[n1-1]#u in all cells above free surface are set to equal to velocity of water at the free surface 
+    u[para['nz']+n1:]=u[para['nz']+n1-1]#u in all cells above free surface are set to equal to velocity of water at the free surface 
+
+    #compute w
+    w= -1*(points[:,2]-d)/d*sqrt(g*d)* ((1-0.5*eta/d)* (-2*a*k*np.tanh(k*phase)*(sech(k*phase))**2) + 1./3.*d**2*(1-0.5 * (points[:,2]-d)**2/d**2) * (a* (16* k**3 * np.tanh(k*phase) * (sech(k*phase))**4 - 8* k**3 * (np.tanh(k*phase))**3 * (sech(k*phase))**2 ) ) )
     w=w*alpha_water#w in all cells above free surface are set to zero
-    w[n1:]=w[n1-1]#w in all cells above free surface are set to equal to velocity just below the free surface 
+    w[n1:para['nz']]=w[n1-1]#w in all cells above free surface are set to equal to velocity of water at the free surface 
+    w[para['nz']+n1:]=w[para['nz']+n1-1]#w in all cells above free surface are set to equal to velocity of water at the free surface 
+
+    #compute v
     v=points[:,2]*0#v is all zero
     log_file.write( 'u: \n'+str(u)+'\n')
     log_file.write( 'v: \n'+str(v)+'\n')
@@ -105,25 +160,20 @@ for i,t in enumerate(t_list):
     velocity=np.vstack((u,v,w))
     velocity=np.transpose(velocity)
     log_file.write( 'velocity:\n'+str(velocity)+'\n')
-    write_boundaryData_vector(velocity,t,'U',para)
-    #pressure
-    #actually there is no need to prescribe pressure
-    p=wave['rho']*para['g']*(-(points[:,2]-wave['depth'])+wave['waveheight']*0.5*np.cosh(wave['k']*(points[:,2]))/np.cosh(wave['k']*wave['depth'])*np.cos(-wave['omega']*t+phase_shifted))
-    p=p*alpha_water
+    #write_boundaryData_vector(velocity,t,'U',para)
 
-    p_rgh=wave['rho']*para['g']*(wave['waveheight']*0.5*np.cosh(wave['k']*(points[:,2]))/np.cosh(wave['k']*wave['depth'])*np.cos(-wave['omega']*t+phase_shifted)) + wave['rho']*para['g']*points[:,2]#this is actually p+rgh instead of p-rgh
-    p_rgh=p_rgh*alpha_water#p in all cells above free surface are set to zero
-
-    #fixed negative p_rgh
-    #for n in range(p_rgh.size):
-    #    if p_rgh[n] < 0:
-    #        p_rgh[n] = 0
-
-    #p=p*alpha_water
-    #log_file.write( 'p:\n'+str(p)+'\n')
-    #log_file.write( 'p_rgh:\n'+str(p_rgh)+'\n')
-    #write_boundaryData_scalar(p_rgh,t,'p_rgh',para)
-    #write_boundaryData_scalar(p,t,'p',para)
+    #plot velocity field
+    plt.figure()
+    plt.plot(points[:,2],u,'rx',label='velocity-u')
+    legend = plt.legend(loc='upper center', shadow=True, prop={'size':7})
+#plt.xlim(3.0,4.0)
+    plt.xlabel('z (m)')
+    plt.ylabel('velocity-u (m/s)')
+    plt.title('velocity-u distribution at inlet')
+    if not('myplot' in os.listdir('./')):
+        os.mkdir('myplot')
+    plt.savefig('./myplot/distribution_velocity-u_at_t='+str(t)+'.png', bbox_inches='tight')
+    plt.close()
 
 
 
