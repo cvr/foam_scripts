@@ -2,7 +2,7 @@
 import numpy as np
 import sys,os
 #from scipy import optimize
-from math import sqrt 
+from math import sqrt,tanh
 import matplotlib.pyplot as plt
 from mylib_DictWriter import write_boundaryData_scalar,write_boundaryData_vector 
 import pdb
@@ -25,13 +25,13 @@ para['g']=9.81#gravity acceleration
 para['log_path']='./'#path to save the log file when execute this script 
 para['inlet_patch_name'] = 'inlet'#./constant/boundaryData/inlet_patch_name
 
-#bousiness
 #parameters for solitary wave 
+#all must be float number rather than int
 wave={}
 wave['depth']=1.0#depth of water
-wave['waveheight']=0.2#wave height
+wave['waveheight']=0.19#wave height
 wave['rho']=998.8#density of water
-wave['initial_phase']=8.0#initial value of kX in sech^2(kX)
+wave['initial_phase']=12.0#initial value of kX in sech^2(kX)
 
 
 #user input end here
@@ -54,10 +54,12 @@ def generate_grid(para):#generate points on inlet plane
 def get_c(para,wave):#compute wave celerity
     #from math import tanh
     from math import sqrt
-    depth = wave['depth']
+    d = wave['depth']
     g = para['g']
     a = wave['waveheight']
-    return sqrt(g*depth*(1+a/depth))
+    ep = a/d
+    #return sqrt(g*d*(1+a/d)) #Boussinesq's solution
+    return sqrt(g*d)*sqrt(1+ep-1./20*ep**2-3/70*ep**3)
 
 def get_k(para,wave):#compute wave number
     #from math import tanh
@@ -97,8 +99,17 @@ t_list = np.append(t_list,para['endTime'])#append endTime to the end of array
 log_file.write( 'time files to be created: \n'+str(t_list)+'\n')
 #from math import pi
 phase_shifted = wave['initial_phase']-k*(para['x_inlet']-c*para['startTime'])
-#eta_list = 0.5*wave['waveheight']*np.cos(-wave['omega']*t_list+phase_shifted)#add -pi/2 so that eta=0 at t=0
-eta_list = a*(sech(k*(para['x_inlet']-c*t_list+phase_shifted)))**2#use phase_shifted so that at startTime eta = 0
+
+#Boussinesq's solution
+#eta_list = a*(sech(k*(para['x_inlet']-c*t_list+phase_shifted)))**2#use phase_shifted so that at startTime eta = 0
+
+#Grimshaw's solution
+ep = a/d
+alpha = sqrt(3./4*ep)*(1-5./8*ep+71./128*ep**2)
+s = sech(alpha*(para['x_inlet']-c*t_list+phase_shifted)/d)
+#pdb.set_trace()
+q = np.tanh(alpha*(para['x_inlet']-c*t_list+phase_shifted)/d)
+eta_list = d*(ep*s**2-3./4*(ep*s*q)**2+ep**3*(5./8*s**2*q**2-101./80*s**4*q**2))
 
 #pdb.set_trace()
 #plot eta_list
@@ -121,8 +132,11 @@ log_file.write('\n\n')
 log_file.write('#'*80+'n')
 log_file.write('Create velocity U and alpha.water at inlet for each time step:\n')
 
+u_history_1 = np.zeros(t_list.shape[0]) #z/d = 1.05
+u_history_2 = np.zeros(t_list.shape[0]) #z/d = 0.45
 
 for i,t in enumerate(t_list):
+    print 't = ',t
     #if z coordinates in a row of points is smaller than eta, alpha_water should be 1 there and 0 otherwise.
     log_file.write( '\nt = '+str(t)+'\n')
     alpha_water = 0.5*(np.sign(depth_list[i]-points[:,2])+1)#a list containing value of alpha.water in each cell on inlet patch
@@ -140,8 +154,24 @@ for i,t in enumerate(t_list):
     #compute u
     eta = eta_list[i] #wave height at this time 
     phase = para['x_inlet']-c*t+phase_shifted #X = x - ct + phase_shifted
-    #u= eta/d*sqrt(g*d)*( 1-0.25*eta/d + d/3*d/eta*(1-1.5*(points[:,2]-d)**2/d**2) * (2*a* k**2 * (np.cosh(2*k*phase)-2) * (sech(k*phase))**4 ))
-    u = c/sqrt(g*a) * ( (a/d+3*(a/d)**2 * (1/6.-1/2.*((points[:,2]-d)/d)**2)) * eta/a - (a/d)**2*(7/4.-9/4.*((points[:,2]-d)/d)**2)*(eta/a)**2 )
+
+    #eq. 5 in Lee 1982, Boussinesq's solution
+    #{
+    #ep = a/d
+    #etas = eta/a
+    #etas2_t2 = 4*(c**2)*(k**2)*(np.tanh(k*phase)**2)*(sech(k*phase)**2)-2*(c**2)*(k**2)*sech(k*phase)**4
+    #u = sqrt(g*d)*ep*(etas-0.25*ep*etas**2+1./3*d**2/c**2*(1-1.5*(points[:,2]/d)**2)*(etas2_t2))
+    #}
+
+    #Grimshaw's solution
+    #{
+    s = sech(alpha*(para['x_inlet']-c*t+phase_shifted)/d)
+    q = tanh(alpha*(para['x_inlet']-c*t+phase_shifted)/d)
+    u = sqrt(g*d)*(ep*s**2-ep**2*(-1./4*s**2+s**4+(points[:,2]/d)**2*(1.5*s**2-9./4*s**4)) -ep**3*(19./40*s**2+1./5*s**4-6./5*s**6+(points[:,2]/d)**2*(-1.5*s**2-15./4*s**4+15./2*s**6)+(points[:,2]/d)**4*(-3./8*s**2+45./16*s**4-45./16*s**6)) )
+    #}
+
+    #u = eta/d*sqrt(g*d)*( 1-0.25*eta/d + d/3*d/eta*(1-1.5*(points[:,2]-d)**2/d**2) * (2*a* k**2 * (np.cosh(2*k*phase)-2) * (sech(k*phase))**4 ))
+    #u = c/sqrt(g*a) * ( (a/d+3*(a/d)**2 * (1/6.-1/2.*((points[:,2]-d)/d)**2)) * eta/a - (a/d)**2*(7/4.-9/4.*((points[:,2]-d)/d)**2)*(eta/a)**2 )
     u=u*alpha_water#u in all cells above free surface are set to zero
     u[n1:para['nz']]=u[n1-1]#u in all cells above free surface are set to equal to velocity of water at the free surface 
     u[para['nz']+n1:]=u[para['nz']+n1-1]#u in all cells above free surface are set to equal to velocity of water at the free surface 
@@ -164,9 +194,9 @@ for i,t in enumerate(t_list):
 
     #plot velocity field
     plt.figure()
-    plt.plot(points[:,2],u,'rx',label='velocity-u')
+    plt.plot(points[:,2],u/sqrt(g*d),'rx',label='velocity-u')
     legend = plt.legend(loc='upper center', shadow=True, prop={'size':7})
-#plt.xlim(3.0,4.0)
+    plt.ylim(-0.1,0.2)
     plt.xlabel('z (m)')
     plt.ylabel('velocity-u (m/s)')
     plt.title('velocity-u distribution at inlet')
@@ -174,6 +204,24 @@ for i,t in enumerate(t_list):
         os.mkdir('myplot')
     plt.savefig('./myplot/distribution_velocity-u_at_t='+str(t)+'.png', bbox_inches='tight')
     plt.close()
+
+    #get u histories at some depths
+    u_history_1[i] = u[34]
+    u_history_2[i] = u[14]
+
+#plot u histories
+plt.figure()
+plt.plot(t_list*sqrt(g/d),u_history_1/sqrt(g*d),'r-',label='velocity-u')
+plt.plot(t_list*sqrt(g/d),u_history_2/sqrt(g*d),'b-',label='velocity-u')
+legend = plt.legend(loc='upper center', shadow=True, prop={'size':7})
+plt.ylim(-0.1,0.2)
+plt.xlabel('t (s)')
+plt.ylabel('velocity-u (m/s)')
+plt.title('velocity-u history at inlet')
+if not('myplot' in os.listdir('./')):
+    os.mkdir('myplot')
+plt.savefig('./myplot/velocity-u_history.png', bbox_inches='tight')
+plt.close()
 
 
 
