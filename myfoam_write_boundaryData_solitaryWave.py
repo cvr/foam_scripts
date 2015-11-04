@@ -13,14 +13,14 @@ import pdb
 #general parameters
 para={}
 para['startTime']=0.0#start time. Should be 0 at this stage.
-para['endTime']=10.0#end time
-para['deltaT']=0.1#time step in ./constant/boundaryData/inlet_patch_name
+para['endTime']=15.0#end time
+para['deltaT']=0.001#time step in ./constant/boundaryData/inlet_patch_name
 para['x_inlet']=0.0#x coordinates of inlet plane
 para['ymin_inlet']=-0.5#min y coordinates of inlet plane
 para['ymax_inlet']=0.5#max y coordinates of inlet plane
 para['zmin_inlet']=0.0#min z coordinates of inlet plane
 para['zmax_inlet']=1.5#max z coordinates of inlet plane
-para['nz']=50#number of cells in z direction. must be integer
+para['nz']=400#number of cells in z direction. must be integer
 para['g']=9.81#gravity acceleration
 para['log_path']='./'#path to save the log file when execute this script 
 para['inlet_patch_name'] = 'inlet'#./constant/boundaryData/inlet_patch_name
@@ -29,7 +29,7 @@ para['inlet_patch_name'] = 'inlet'#./constant/boundaryData/inlet_patch_name
 #all must be float number rather than int
 wave={}
 wave['depth']=1.0#depth of water
-wave['waveheight']=0.19#wave height
+wave['waveheight']=0.11#wave height
 wave['rho']=998.8#density of water
 wave['initial_phase']=12.0#initial value of kX in sech^2(kX)
 
@@ -59,7 +59,7 @@ def get_c(para,wave):#compute wave celerity
     a = wave['waveheight']
     ep = a/d
     #return sqrt(g*d*(1+a/d)) #Boussinesq's solution
-    return sqrt(g*d)*sqrt(1+ep-1./20*ep**2-3/70*ep**3)
+    return sqrt(g*d)*sqrt(1+ep-1./20*ep**2-3/70*ep**3)#Grimshaw's solution
 
 def get_k(para,wave):#compute wave number
     #from math import tanh
@@ -134,6 +134,8 @@ log_file.write('Create velocity U and alpha.water at inlet for each time step:\n
 
 u_history_1 = np.zeros(t_list.shape[0]) #z/d = 1.05
 u_history_2 = np.zeros(t_list.shape[0]) #z/d = 0.45
+w_history_1 = np.zeros(t_list.shape[0]) #z/d = 1.05
+w_history_2 = np.zeros(t_list.shape[0]) #z/d = 0.45
 
 for i,t in enumerate(t_list):
     print 't = ',t
@@ -149,12 +151,11 @@ for i,t in enumerate(t_list):
             break
     n2 = para['nz'] - n1
     log_file.write( 'alpha.water in each cell: \n'+str(alpha_water)+'\n')
-    #write_boundaryData_scalar(alpha_water,t,'alpha.water',para)
+    write_boundaryData_scalar(alpha_water,t,'alpha.water',para)
 
     #compute u
     eta = eta_list[i] #wave height at this time 
     phase = para['x_inlet']-c*t+phase_shifted #X = x - ct + phase_shifted
-
     #eq. 5 in Lee 1982, Boussinesq's solution
     #{
     #ep = a/d
@@ -177,7 +178,12 @@ for i,t in enumerate(t_list):
     u[para['nz']+n1:]=u[para['nz']+n1-1]#u in all cells above free surface are set to equal to velocity of water at the free surface 
 
     #compute w
-    w= -1*(points[:,2]-d)/d*sqrt(g*d)* ((1-0.5*eta/d)* (-2*a*k*np.tanh(k*phase)*(sech(k*phase))**2) + 1./3.*d**2*(1-0.5 * (points[:,2]-d)**2/d**2) * (a* (16* k**3 * np.tanh(k*phase) * (sech(k*phase))**4 - 8* k**3 * (np.tanh(k*phase))**3 * (sech(k*phase))**2 ) ) )
+    #w= -1*(points[:,2]-d)/d*sqrt(g*d)* ((1-0.5*eta/d)* (-2*a*k*np.tanh(k*phase)*(sech(k*phase))**2) + 1./3.*d**2*(1-0.5 * (points[:,2]-d)**2/d**2) * (a* (16* k**3 * np.tanh(k*phase) * (sech(k*phase))**4 - 8* k**3 * (np.tanh(k*phase))**3 * (sech(k*phase))**2 ) ) )
+    #Grimshaw's solution
+    #{
+    w = -1*sqrt(g*d)*sqrt(3*ep)*(points[:,2]/d)*q*(-1*ep*s**2+ep**2*(3./8*s**2+2*s**4+(points[:,2]/d)**2*(0.5*s**2-3./2*s**4))+ep**3*(49./640*s**2-17./20*s**4-18./5*s**6+(points[:,2]/d)**2*(-13./16*s**2-25./16*s**4+15./2*s**6)+(points[:,2]/d)**4*(-3./40*s**2+9./8*s**4-27./16*s**6)))
+    #w = sqrt(g*d)*sqrt(3*ep)*(points[:,2]/d)*q*(-1*ep*s**2+ep**2*(3./8*s**2+2*s**4+(points[:,2]/d)**2*(0.5*s**2-3./2*s**4))+ep**3*(49./640*s**2-17./20*s**4-18./5*s**6+(points[:,2]/d)**2*(-13./16*s**2-25./16*s**4+15./2*s**6)))
+    #}
     w=w*alpha_water#w in all cells above free surface are set to zero
     w[n1:para['nz']]=w[n1-1]#w in all cells above free surface are set to equal to velocity of water at the free surface 
     w[para['nz']+n1:]=w[para['nz']+n1-1]#w in all cells above free surface are set to equal to velocity of water at the free surface 
@@ -190,24 +196,27 @@ for i,t in enumerate(t_list):
     velocity=np.vstack((u,v,w))
     velocity=np.transpose(velocity)
     log_file.write( 'velocity:\n'+str(velocity)+'\n')
-    #write_boundaryData_vector(velocity,t,'U',para)
+    write_boundaryData_vector(velocity,t,'U',para)
 
-    #plot velocity field
-    plt.figure()
-    plt.plot(points[:,2],u/sqrt(g*d),'rx',label='velocity-u')
-    legend = plt.legend(loc='upper center', shadow=True, prop={'size':7})
-    plt.ylim(-0.1,0.2)
-    plt.xlabel('z (m)')
-    plt.ylabel('velocity-u (m/s)')
-    plt.title('velocity-u distribution at inlet')
-    if not('myplot' in os.listdir('./')):
-        os.mkdir('myplot')
-    plt.savefig('./myplot/distribution_velocity-u_at_t='+str(t)+'.png', bbox_inches='tight')
-    plt.close()
+    ##plot velocity-u field
+    #plt.figure()
+    #plt.plot(points[:,2],u/sqrt(g*d),'rx',label='velocity-u')
+    #legend = plt.legend(loc='upper center', shadow=True, prop={'size':7})
+    #plt.ylim(-0.1,0.2)
+    #plt.xlabel('z (m)')
+    #plt.ylabel('velocity-u (m/s)')
+    #plt.title('velocity-u distribution at inlet')
+    #if not('myplot' in os.listdir('./')):
+    #    os.mkdir('myplot')
+    #plt.savefig('./myplot/distribution_velocity-u_at_t='+str(t)+'.png', bbox_inches='tight')
+    #plt.close()
 
     #get u histories at some depths
     u_history_1[i] = u[34]
     u_history_2[i] = u[14]
+    #get w histories at some depths
+    w_history_1[i] = w[34]
+    w_history_2[i] = w[14]
 
 #plot u histories
 plt.figure()
@@ -223,6 +232,19 @@ if not('myplot' in os.listdir('./')):
 plt.savefig('./myplot/velocity-u_history.png', bbox_inches='tight')
 plt.close()
 
+#plot w histories
+plt.figure()
+plt.plot(t_list*sqrt(g/d),w_history_1/sqrt(g*d),'r-',label='velocity-u')
+plt.plot(t_list*sqrt(g/d),w_history_2/sqrt(g*d),'b-',label='velocity-u')
+legend = plt.legend(loc='upper center', shadow=True, prop={'size':7})
+plt.ylim(-0.04,0.04)
+plt.xlabel('t (s)')
+plt.ylabel('velocity-w (m/s)')
+plt.title('velocity-w history at inlet')
+if not('myplot' in os.listdir('./')):
+    os.mkdir('myplot')
+plt.savefig('./myplot/velocity-w_history.png', bbox_inches='tight')
+plt.close()
 
 
     
