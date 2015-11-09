@@ -4,7 +4,6 @@ import numpy as np
 import pdb
 import matplotlib.pyplot as plt
 import os
-import matplotlib as mpl
 
 
 #a triangle object here is a 3x3 numpy array, usually named as tri.
@@ -82,38 +81,6 @@ def get_z(pt, tri):
         z = (x2*y3-x3*y2+(y2-y3)*x+(x3-x2)*y)/detj*z1 + (x3*y1-x1*y3+(y3-y1)*x+(x1-x3)*y)/detj*z2 + (x1*y2-x2*y1+(y1-y2)*x+(x2-x1)*y)/detj*z3
         return [z,True]
 
-#def get_z(pt, list_tri):
-#    #given (x,y) of a point, pt, and a list of triangle with coordinates of 3 vertices, list_tri
-#    #return z coordinate of the point if it is on the plane described by the triangle
-#    #first we project all triangles in stl file onto x-y plane to get triangles on x-y plane. If a point P(x_p,y_p) is inside a certain triangle on x-y plane (determined by the algorithm above), then we use interpolate z(x_p,y_p) linearly from z value of three vertices of the triangle.
-#    for i,item in enumerate(list_tri): #item is a triangle object
-#        if inside_tri(pt,item):
-#            x1 = item[0,0]
-#            x2 = item[1,0]
-#            x3 = item[2,0]
-#            y1 = item[0,1]
-#            y2 = item[1,1]
-#            y3 = item[2,1]
-#            z1 = item[0,2]
-#            z2 = item[1,2]
-#            z3 = item[2,2]
-#            J = np.array([[1,x1,y1],[1,x2,y2],[1,x3,y3]])
-#            detj = np.linalg.det(J)
-#            #what if detj = 0, which means the triangle is vertical to x-y plane?
-#            #disgard this triangle and continue to look for next triangle for this point
-#            if abs(detj)<1e-10:
-#                continue
-#            x = pt[0]
-#            y = pt[1]
-#            z = (x2*y3-x3*y2+(y2-y3)*x+(x3-x2)*y)/detj*z1 + (x3*y1-x1*y3+(y3-y1)*x+(x1-x3)*y)/detj*z2 + (x1*y2-x2*y1+(y1-y2)*x+(x2-x1)*y)/detj*z3
-#            return z
-#    #if not found, give a warning
-#    print "Warning! "
-#    print "Cannot found a triangle where pt,", str(pt), " was inside."
-#    return float('nan')
-
-
-
 ##test inside_tri()
 #pt = [0.5,0]
 #tri = np.array([[0,0,0],[1,0,0],[1,0,1]])
@@ -132,7 +99,7 @@ def get_z(pt, tri):
 #main
 #stlfile = './test.stl'
 stlfile = 'seaside_whole_nofillet.stl'
-outputfile = 'output.xyz'
+outputfile = 'seaside.xyz'
 logfile = stlfile+'.STLToXYZ.log'
 try:
     stl = open('./'+stlfile,'r')
@@ -170,27 +137,24 @@ except IOError:
     print "Failed to open the file: ", output
     exit()
 
-x0 = 30
-xn = 44 
-y0 = -6
-yn = 7
-dx = 0.002
-dy = 0.002
-bottom = 0.93 #z coordiante of bottom of stl file. Points on this plane should not be used.
-#dx = 0.01
-#dy = 0.01
-#x = np.arange(32.5,45,0.1)
-#y = np.arange(-10,8,0.1)
-#x = np.arange(31.5,36,0.02)
-#y = np.arange(-2,0,0.02)
+x0 = 32.5
+xn = 43.6 
+#xn = 39.8 
+y0 = -13.2
+yn = 8.5
+dx = 0.01
+dy = 0.01
+bottom = 0.995 #z coordiante of the tank bottom. Points under this plane should not be used.
+sea_level = 0.97
 x = np.arange(x0,xn+dx/10.,dx)
 y = np.arange(y0,yn+dy/10.,dy)
-print "mesh size: ", str(x.size),' by ',str(y.size)
+print "mesh size: nx = ", str(x.size),', ny = ',str(y.size)
 totalpt = float(x.size*y.size)
 status = np.zeros((y.size,x.size))#for tracking status of each point
 #status[i,j] = 0: pt at (i,j) has not been processed
 #status[i,j] = 1: pt at (i,j) has been processed
 Z = np.zeros((y.size,x.size))
+Z = Z + bottom
 
 #pseudo code:
 #for each triangle, tri:
@@ -225,7 +189,6 @@ for tri in list_tri:
     imax = min(max(imax,0),x.size-1)
     jmin = min(max(jmin,0),y.size-1)
     jmax = min(max(jmax,0),y.size-1)
-    #print str(count/totalpt*100).format( + " % complete..."
     print '%3.2f' % (count/totalpt*100) + " % complete..."
     for i in np.arange(imin, imax+0.1, 1): 
         for j in np.arange(jmin, jmax+0.1, 1): 
@@ -236,7 +199,7 @@ for tri in list_tri:
                     [z,done] = get_z(pt,tri)
                     #if abs(pt[0]-36.0) < 1e-2 and abs(pt[1]-0.5) < 1e-2: 
                     #    pdb.set_trace()
-                    if done == True and z > bottom:
+                    if done == True and z > (bottom-0.1):
                         Z[j,i] = z
                         status[j,i] = 1#mark as processed
                         log.write("    Marked as processed, point: "+ str(pt)+ "at row " + str(j)+ " and column " +str(i) +'\n')
@@ -248,18 +211,38 @@ for tri in list_tri:
                         count = count + 1
 
 #check if all pts has been processed
-residual = np.linalg.norm(status,-np.inf) #minimum absolute value in status
+residual = np.amin(status)#minimum absolute value in status
 if residual < 1e-10:
     print "Warning! Some points in the grid may have not been processed!"
     log.write("Warning! Some points in the grid may have not been processed!")
     log.write("These points have not been processed:\n")
     for i in range(status.shape[1]):
         for j in range(status.shape[0]):
-            log.write("point at row: "+ str(j)+ ", column: "+ str(i)+ ". status: "+str(status[j,i])+'\n')
+            if abs(status[j,i]-0) < 1e-10:#this pt has not been processed
+                pt = str(x[i])+' '+str(y[j]) +' '+str(Z[j,i]) 
+                output.write(pt+'\n')#write pt that did not get value from stl
+                log.write("point at row: "+ str(j)+ ", column: "+ str(i)+ ". status: "+str(status[j,i])+'\n')
 
-    
+#sort xyz data
+import time
+start_time = time.clock()
 
+output.close()
+data = np.loadtxt(outputfile, delimiter = ' ')
+#pdb.set_trace()
+index = np.lexsort((data[:,0],-data[:,1]))
+data_sorted = data[index]
+t_sort = time.clock() - start_time
+print "CPU time used to sort: ", t_sort , '\n'
+data_sorted[:,2] = data_sorted[:,2] - sea_level #sea level
+t_substract = time.clock() - t_sort
+print "CPU time used to substract: ", t_substract , '\n'
+np.savetxt(outputfile, data_sorted,fmt = '%1.7f',delimiter = ' ')
 
+#write x,y,z data in seperate file
+np.savetxt(outputfile+'.x',x,fmt = '%1.8f',delimiter = ' ')
+np.savetxt(outputfile+'.y',y,fmt = '%1.8f',delimiter = ' ')
+np.savetxt(outputfile+'.z',Z-sea_level,fmt = '%1.8f',delimiter = ' ')
 
 
 
@@ -280,7 +263,7 @@ plt.xlabel(r'x')
 plt.ylabel(r'y')
 if not('myplot' in os.listdir('./')):
     os.mkdir('myplot')
-plt.savefig('./myplot/'+outputfile+'.png', bbox_inches='tight')
+plt.savefig('./myplot/'+outputfile+'.png', bbox_inches='tight',dpi=900)
 plt.close()
 
 
