@@ -816,7 +816,7 @@ def write_controlDict_component(para,systemDir = './system'):
                 dict_file.write('type forces;\n')
                 dict_file.write('functionObjectLibs ("libforces.so");\n')
                 dict_file.write('patches ('+file[:-4]+'); \n')
-                dict_file.write('log   yes;\n')
+                dict_file.write('log   no;\n')
                 dict_file.write('pName p;\n')
                 dict_file.write('UName U;\n')
                 dict_file.write('rhoName rhoInf;\n')
