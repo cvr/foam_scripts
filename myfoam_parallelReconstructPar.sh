@@ -1,7 +1,7 @@
 #!/bin/bash
 echo "
+      Xinsheng Qin July 2015, modified from:
       K. Wardle 6/22/09, modified by H. Stadler Dec. 2013, minor fix Will Bateman Sep 2014.
-      Modified by Xinsheng Qin July 2015.
       bash script to run reconstructPar in pseudo-parallel mode
       by breaking time directories into multiple ranges
      "
