@@ -26,7 +26,7 @@ def mysort(tobesorted):
 def getfilelist():
   'This function return a list of the time files in ascending order.'
   list=[];
-  for file in os.listdir(path):
+  for file in os.listdir(path+'/sets'):
     num = float(file)
     if num%1 == 0:#if num does not contain a decimal, do not add '.0' part after it.
       num = int(num)
@@ -41,7 +41,7 @@ def getpathlist(filename):
   'return list of full paths of the csv files to be processed, ordered by value of the names of time files containing them. The element of the list is in the type of string'
   list = getfilelist() 
   for i in range(len(list)):
-    list[i]=(path+'/'+list[i]+'/'+filename)
+    list[i]=(path+'/sets/'+list[i]+'/'+filename)
   return list
 
 ####################################################################################################
@@ -56,6 +56,7 @@ def main(argv,input_filename,input_path):
     except getopt.GetoptError:
        print 'invalid options'
        print 'myfoam_getSetsHistory_U -i <input file name> -p <input file path> -m <method number>'
+       print 'Example: myfoam_getSetsHistory_alpha.water.py -m 2 -i wavegauge1_alpha1.csv -p ./postProcessing_sample_at_cell_center'
        sys.exit(2)
     for opt, arg in opts:
        if opt in ("-i", "--ifile"):
@@ -96,7 +97,8 @@ def main(argv,input_filename,input_path):
 
 
     results=[['time','waveheight']]
-    csvfile = open('./postProcessing/history_'+m_name+'_'+filename,'w')
+    # csvfile = open('./postProcessing/history_'+m_name+'_'+filename,'w')
+    csvfile = open(path+'/history_'+m_name+'_'+filename,'w')
     writer=csv.writer(csvfile,delimiter=',')
     filelist=getfilelist()
     pathlist=getpathlist(filename)    
@@ -206,7 +208,7 @@ def main(argv,input_filename,input_path):
 
 #main part
 #directory to process
-path="./postProcessing/sets"
+path="./postProcessing"
 #This is the default filename in each time directories.
 filename='origin_alpha.water.csv'
 main(sys.argv[1:],filename,path)
